@@ -30,9 +30,11 @@ import {
   Sparkles,
   Settings,
   Target,
-  CircleDot
+  CircleDot,
+  Box
 } from 'lucide-react';
 import { toast } from 'sonner';
+import HouseModel3D from '../components/house/HouseModel3D';
 
 // Copy to Clipboard Component
 const CopyButton = ({ text, label }) => {
@@ -107,6 +109,7 @@ export default function HomeBaseManual() {
   const contentRef = useRef(null);
 
   const chapters = [
+    { id: 'model3d', label: '3D Model', icon: Box },
     { id: 'vitals', label: 'Vitals', icon: Activity },
     { id: 'spaces', label: 'Spaces', icon: Layout },
     { id: 'aesthetics', label: 'Aesthetics', icon: Palette },
@@ -174,6 +177,12 @@ export default function HomeBaseManual() {
       setDarkMode(false);
     }
   }, [activeChapter]);
+
+  // Handle room click from 3D model
+  const handleRoomClick = (roomData) => {
+    toast.success(`Navigating to ${roomData.name}`);
+    scrollToChapter(roomData.section);
+  };
 
   return (
     <div className={`flex h-screen overflow-hidden ${darkMode ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}>
@@ -291,6 +300,55 @@ export default function HomeBaseManual() {
           className={`flex-1 overflow-y-auto ${darkMode ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}
         >
           <div className="max-w-5xl mx-auto px-6 py-12 space-y-20">
+            {/* CHAPTER 0: 3D MODEL */}
+            <section id="chapter-model3d" className="scroll-mt-24">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex items-center gap-3 mb-8">
+                  <Box className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-900'}`} />
+                  <div>
+                    <h2 className={`text-3xl font-light tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Interactive 3D Model
+                    </h2>
+                    <p className={`text-sm mt-2 ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                      Explore the digital twin of The Miller Residence
+                    </p>
+                  </div>
+                </div>
+
+                <div className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'} rounded-3xl overflow-hidden border shadow-lg`}>
+                  <div className="h-[600px] lg:h-[700px]">
+                    <HouseModel3D onRoomClick={handleRoomClick} darkMode={darkMode} />
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-6">
+                  {[
+                    { name: 'Kitchen', color: 'bg-blue-600' },
+                    { name: 'Living Room', color: 'bg-green-600' },
+                    { name: 'Master Bedroom', color: 'bg-purple-600' },
+                    { name: 'Garage', color: 'bg-slate-600' },
+                    { name: 'Dining Room', color: 'bg-amber-600' },
+                    { name: 'Bedroom 2', color: 'bg-pink-600' },
+                  ].map((room) => (
+                    <div
+                      key={room.name}
+                      className={`flex items-center gap-3 ${darkMode ? 'bg-slate-800' : 'bg-white'} rounded-xl p-3 border ${darkMode ? 'border-slate-700' : 'border-gray-100'}`}
+                    >
+                      <div className={`w-4 h-4 ${room.color} rounded`} />
+                      <span className={`text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {room.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </section>
+
             {/* CHAPTER 1: VITALS */}
             <section id="chapter-vitals" className="scroll-mt-24">
               <motion.div
