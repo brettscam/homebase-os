@@ -38,28 +38,54 @@ const Navigation = ({ activeView, setActiveView, isEmergency }) => {
   ];
 
   return (
-    <nav className={`fixed bottom-0 left-0 right-0 ${isEmergency ? 'bg-slate-900 border-slate-700' : 'bg-white/80 backdrop-blur-xl border-gray-100'} border-t z-50`}>
-      <div className="max-w-lg mx-auto px-6 py-3">
-        <div className="flex justify-between items-center">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all duration-300 ${
-                activeView === item.id 
-                  ? isEmergency 
-                    ? 'bg-red-500/20 text-red-400' 
-                    : 'bg-blue-50 text-blue-600'
-                  : isEmergency 
-                    ? 'text-slate-400 hover:text-slate-200' 
-                    : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <item.icon className="w-5 h-5" strokeWidth={1.5} />
-              <span className="text-xs font-medium tracking-wide">{item.label}</span>
-            </button>
-          ))}
-        </div>
+    <nav className={`fixed left-0 top-0 bottom-0 w-64 ${isEmergency ? 'bg-slate-900 border-slate-700' : 'bg-white/95 backdrop-blur-xl border-gray-100'} border-r z-50 flex flex-col`}>
+      <div className="p-6 border-b border-gray-100">
+        <h1 className={`text-xl font-light tracking-tight mb-1 ${isEmergency ? 'text-white' : 'text-gray-900'}`}>
+          HOMEBASE
+        </h1>
+        <p className={`text-xs ${isEmergency ? 'text-slate-400' : 'text-gray-500'}`}>
+          Quick Access
+        </p>
+      </div>
+
+      <div className="flex-1 p-4 space-y-2">
+        {/* Link to Full Manual */}
+        <Link
+          to={createPageUrl('HomeBaseManual')}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            isEmergency 
+              ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+              : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg'
+          }`}
+        >
+          <Book className="w-5 h-5" strokeWidth={1.5} />
+          <div className="flex-1">
+            <span className="font-semibold text-sm block">Full Manual</span>
+            <span className="text-xs opacity-90">3D Model & Complete Docs</span>
+          </div>
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+
+        <div className={`my-4 border-t ${isEmergency ? 'border-slate-700' : 'border-gray-200'}`} />
+
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setActiveView(item.id)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              activeView === item.id 
+                ? isEmergency 
+                  ? 'bg-red-500/20 text-red-400' 
+                  : 'bg-blue-50 text-blue-600'
+                : isEmergency 
+                  ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' 
+                  : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <item.icon className="w-5 h-5" strokeWidth={1.5} />
+            <span className="font-medium text-sm">{item.label}</span>
+          </button>
+        ))}
       </div>
     </nav>
   );
@@ -135,8 +161,8 @@ const QuickInfoCard = ({ icon: Icon, title, primary, secondary, color, delay }) 
 
 // Dashboard View
 const DashboardView = () => (
-  <div className="min-h-screen bg-[#F9F9F9] pb-28">
-    <div className="px-6 pt-14 pb-8">
+  <div className="min-h-screen bg-[#F9F9F9]">
+    <div className="px-6 pt-8 pb-8">
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -210,8 +236,8 @@ const AssistantView = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F9F9] pb-28">
-      <div className="px-6 pt-14">
+    <div className="min-h-screen bg-[#F9F9F9]">
+      <div className="px-6 pt-8">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -306,8 +332,8 @@ const AssistantView = () => {
               </div>
 
               {/* Input Bar */}
-              <div className="fixed bottom-24 left-0 right-0 px-6">
-                <div className="max-w-lg mx-auto bg-white rounded-full shadow-lg border border-gray-100 flex items-center p-2">
+              <div className="mt-8">
+                <div className="bg-white rounded-full shadow-lg border border-gray-100 flex items-center p-2">
                   <input
                     type="text"
                     placeholder="Ask another question..."
@@ -328,8 +354,8 @@ const AssistantView = () => {
 
 // Room Detail View
 const RoomDetailView = () => (
-  <div className="min-h-screen bg-[#F9F9F9] pb-28">
-    <div className="px-6 pt-14">
+  <div className="min-h-screen bg-[#F9F9F9]">
+    <div className="px-6 pt-8">
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -484,8 +510,8 @@ const EmergencyView = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-900 pb-28">
-      <div className="px-6 pt-14">
+    <div className="min-h-screen bg-slate-900">
+      <div className="px-6 pt-8">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -595,26 +621,20 @@ export default function HomeBase() {
 
   return (
     <div className={`min-h-screen ${isEmergency ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}>
-      {/* Navigation to Full Manual */}
-      <Link
-        to={createPageUrl('HomeBaseManual')}
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg font-medium text-sm transition-colors flex items-center gap-2"
-      >
-        <span>📖</span>
-        View Full Interactive Manual with 3D Model
-      </Link>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeView}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          {renderView()}
-        </motion.div>
-      </AnimatePresence>
       <Navigation activeView={activeView} setActiveView={setActiveView} isEmergency={isEmergency} />
+      <div className="ml-64">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeView}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
