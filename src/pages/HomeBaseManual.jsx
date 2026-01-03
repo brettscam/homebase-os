@@ -393,8 +393,8 @@ export default function HomeBaseManual() {
                         </h3>
                       </div>
                       <div className="bg-gray-50 rounded-2xl p-5">
-                        <SpecRow label="Floor Plan" value='16\' 4" × 18\' 2"' sublabel="Measured wall-to-wall" />
-                        <SpecRow label="Ceiling Height" value='9\' 6"' sublabel="Standard height" />
+                        <SpecRow label="Floor Plan" value={`16' 4" × 18' 2"`} sublabel="Measured wall-to-wall" />
+                        <SpecRow label="Ceiling Height" value={`9' 6"`} sublabel="Standard height" />
                         <SpecRow label="Square Footage" value="~297 sq ft" sublabel="Calculated area" />
                         <SpecRow label="Data Source" value="LiDAR Scan" sublabel="Accuracy: ±0.5 inch" />
                       </div>
@@ -410,8 +410,8 @@ export default function HomeBaseManual() {
                       </div>
                       <div className="bg-gray-50 rounded-2xl p-5">
                         <SpecRow label="Type" value="2× Casement" sublabel="Milgard Tuscany Series" />
-                        <SpecRow label="Rough Opening" value='36"w × 48"h' sublabel="Frame dimensions" />
-                        <SpecRow label="Daylight Opening" value='32"w × 44"h' sublabel="Visible glass" />
+                        <SpecRow label="Rough Opening" value={`36"w × 48"h`} sublabel="Frame dimensions" />
+                        <SpecRow label="Daylight Opening" value={`32"w × 44"h`} sublabel="Visible glass" />
                       </div>
                     </div>
 
@@ -425,7 +425,7 @@ export default function HomeBaseManual() {
                       </div>
                       <div className="bg-gray-50 rounded-2xl p-5">
                         <SpecRow label="Material" value="White Oak" sublabel="Engineered hardwood" />
-                        <SpecRow label="Plank Width" value='7"' sublabel="Wide plank style" />
+                        <SpecRow label="Plank Width" value={`7"`} sublabel="Wide plank style" />
                         <SpecRow label="Finish" value="Matte" sublabel="Low-sheen protective coating" />
                       </div>
                     </div>
@@ -506,7 +506,7 @@ export default function HomeBaseManual() {
                       <div className="space-y-2">
                         <SpecRow label="Brand" value="Rejuvenation" />
                         <SpecRow label="Finish" value="Unlacquered Brass" />
-                        <SpecRow label="Centers" value='4"' />
+                        <SpecRow label="Centers" value={`4"`} />
                       </div>
                     </div>
 
@@ -519,7 +519,7 @@ export default function HomeBaseManual() {
                       </div>
                       <div className="space-y-2">
                         <SpecRow label="Manufacturer" value="Fireclay Tile" />
-                        <SpecRow label="Size" value='3" × 6" Subway' />
+                        <SpecRow label="Size" value={`3" × 6" Subway`} />
                         <SpecRow label="Color" value="Oyster White" />
                       </div>
                     </div>
@@ -654,7 +654,7 @@ export default function HomeBaseManual() {
                       Gutters & Drainage
                     </h3>
                     <div className="space-y-3">
-                      <SpecRow label="Gutter Type" value='Seamless Aluminum (5")' />
+                      <SpecRow label="Gutter Type" value={`Seamless Aluminum (5")`} />
                       <SpecRow label="Downspouts" value="French Drain System" />
                       <SpecRow label="Drainage" value="Exits to street" />
                     </div>
