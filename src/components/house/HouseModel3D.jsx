@@ -148,23 +148,24 @@ export default function HouseModel3D({ onRoomClick, darkMode }) {
 
     // Create house structure
     const houseGroup = new THREE.Group();
-    
-    // Create rooms
+
+    // Create rooms with more architectural detail
     Object.entries(rooms).forEach(([key, room]) => {
+      // Main room volume
       const roomGeometry = new THREE.BoxGeometry(
         room.size.width,
         room.size.height,
         room.size.depth
       );
-      
+
       const roomMaterial = new THREE.MeshStandardMaterial({
         color: room.color,
-        roughness: 0.5,
-        metalness: 0.3,
+        roughness: 0.7,
+        metalness: 0.1,
         transparent: true,
-        opacity: 0.85
+        opacity: 0.75
       });
-      
+
       const roomMesh = new THREE.Mesh(roomGeometry, roomMaterial);
       roomMesh.position.set(
         room.position.x,
@@ -174,18 +175,31 @@ export default function HouseModel3D({ onRoomClick, darkMode }) {
       roomMesh.castShadow = true;
       roomMesh.receiveShadow = true;
       roomMesh.userData = { roomKey: key, roomData: room };
-      
-      // Add edges
+
+      // Enhanced edges for architectural look
       const edges = new THREE.EdgesGeometry(roomGeometry);
       const lineMaterial = new THREE.LineBasicMaterial({ 
         color: darkMode ? 0xffffff : 0x111827,
         linewidth: 2,
         transparent: true,
-        opacity: 0.3
+        opacity: 0.6
       });
       const wireframe = new THREE.LineSegments(edges, lineMaterial);
       roomMesh.add(wireframe);
-      
+
+      // Add floor detail
+      const floorGeometry = new THREE.PlaneGeometry(room.size.width - 0.2, room.size.depth - 0.2);
+      const floorMaterial = new THREE.MeshStandardMaterial({
+        color: darkMode ? 0x2d3748 : 0xf5f5f5,
+        roughness: 0.9,
+        metalness: 0.1
+      });
+      const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(room.position.x, 0.05, room.position.z);
+      floor.receiveShadow = true;
+      houseGroup.add(floor);
+
       houseGroup.add(roomMesh);
 
       // Add room label (floating text plane)
@@ -222,23 +236,48 @@ export default function HouseModel3D({ onRoomClick, darkMode }) {
       houseGroup.add(labelMesh);
     });
 
-    // Add exterior walls outline
-    const wallMaterial = new THREE.LineBasicMaterial({ 
-      color: darkMode ? 0x475569 : 0x6b7280,
-      linewidth: 3
-    });
-    
-    const points = [
-      new THREE.Vector3(-11, 0, -11),
-      new THREE.Vector3(11, 0, -11),
-      new THREE.Vector3(11, 0, 5),
-      new THREE.Vector3(-11, 0, 5),
-      new THREE.Vector3(-11, 0, -11),
+    // Add exterior walls with depth
+    const wallHeight = 3.5;
+    const wallThickness = 0.3;
+    const wallColor = darkMode ? 0x334155 : 0xe5e7eb;
+
+    // Create solid exterior walls
+    const walls = [
+      // North wall
+      { x: 0, z: -11, width: 22, depth: wallThickness },
+      // South wall
+      { x: 0, z: 5, width: 22, depth: wallThickness },
+      // East wall
+      { x: 11, z: -3, width: wallThickness, depth: 16 },
+      // West wall
+      { x: -11, z: -3, width: wallThickness, depth: 16 },
     ];
-    
-    const wallGeometry = new THREE.BufferGeometry().setFromPoints(points);
-    const wallLine = new THREE.Line(wallGeometry, wallMaterial);
-    houseGroup.add(wallLine);
+
+    walls.forEach(wall => {
+      const wallGeometry = new THREE.BoxGeometry(wall.width, wallHeight, wall.depth);
+      const wallMaterial = new THREE.MeshStandardMaterial({
+        color: wallColor,
+        roughness: 0.8,
+        metalness: 0.2
+      });
+      const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
+      wallMesh.position.set(wall.x, wallHeight / 2, wall.z);
+      wallMesh.castShadow = true;
+      wallMesh.receiveShadow = true;
+      houseGroup.add(wallMesh);
+    });
+
+    // Add roof
+    const roofGeometry = new THREE.BoxGeometry(22.5, 0.3, 16.5);
+    const roofMaterial = new THREE.MeshStandardMaterial({
+      color: darkMode ? 0x1e293b : 0x94a3b8,
+      roughness: 0.9,
+      metalness: 0.1
+    });
+    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+    roof.position.set(0, wallHeight + 0.15, -3);
+    roof.castShadow = true;
+    houseGroup.add(roof);
 
     scene.add(houseGroup);
 

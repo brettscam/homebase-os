@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import HouseModel3D from '../components/house/HouseModel3D';
+import AddInfoModal from '../components/house/AddInfoModal';
 
 // Copy to Clipboard Component
 const CopyButton = ({ text, label }) => {
@@ -107,15 +108,37 @@ export default function HomeBaseManual() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [showAddInfoModal, setShowAddInfoModal] = useState(false);
+  const [selectedSection, setSelectedSection] = useState(null);
   const contentRef = useRef(null);
+
+  // Completion tracking for each section
+  const completionData = {
+    vitals: { completed: 4, total: 6, percentage: 67 },
+    spaces: { completed: 8, total: 12, percentage: 67 },
+    aesthetics: { completed: 5, total: 8, percentage: 63 },
+    mechanical: { completed: 6, total: 10, percentage: 60 },
+    exterior: { completed: 4, total: 7, percentage: 57 },
+    appliances: { completed: 3, total: 8, percentage: 38 },
+    systems: { completed: 5, total: 9, percentage: 56 },
+    landscape: { completed: 2, total: 6, percentage: 33 },
+    emergency: { completed: 6, total: 6, percentage: 100 },
+  };
+
+  const totalCompleted = Object.values(completionData).reduce((sum, item) => sum + item.completed, 0);
+  const totalItems = Object.values(completionData).reduce((sum, item) => sum + item.total, 0);
+  const overallCompletion = Math.round((totalCompleted / totalItems) * 100);
 
   const chapters = [
     { id: 'model3d', label: '3D Model', icon: Box },
     { id: 'vitals', label: 'Vitals', icon: Activity },
     { id: 'spaces', label: 'Spaces', icon: Layout },
     { id: 'aesthetics', label: 'Aesthetics', icon: Palette },
-    { id: 'mechanical', label: 'Mechanical', icon: Wrench },
+    { id: 'mechanical', label: 'Mechanical Systems', icon: Wrench },
+    { id: 'appliances', label: 'Appliances', icon: Settings },
     { id: 'exterior', label: 'Exterior', icon: Building2 },
+    { id: 'landscape', label: 'Landscape', icon: Trees },
+    { id: 'systems', label: 'Smart Systems', icon: Zap },
     { id: 'emergency', label: 'Emergency', icon: AlertTriangle },
   ];
 
@@ -216,6 +239,23 @@ export default function HomeBaseManual() {
               <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>The Miller Residence</p>
               <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Mill Valley, CA</p>
             </div>
+
+            {/* Overall Completion */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-gray-500">Manual Completion</span>
+                <span className="text-lg font-semibold text-gray-900">{overallCompletion}%</span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${overallCompletion}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-2">{totalCompleted} of {totalItems} items documented</p>
+            </div>
           </div>
 
           {/* Table of Contents */}
@@ -224,27 +264,49 @@ export default function HomeBaseManual() {
               Table of Contents
             </p>
             <div className="space-y-1">
-              {chapters.map((chapter) => (
-                <button
-                  key={chapter.id}
-                  onClick={() => scrollToChapter(chapter.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${
-                    activeChapter === chapter.id
-                      ? darkMode
-                        ? 'bg-slate-800 text-white'
-                        : 'bg-blue-50 text-blue-600'
-                      : darkMode
-                      ? 'text-slate-300 hover:bg-slate-800'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <chapter.icon className="w-4.5 h-4.5" strokeWidth={1.5} />
-                  <span className="font-medium text-sm">{chapter.label}</span>
-                  {activeChapter === chapter.id && (
-                    <ChevronRight className="w-4 h-4 ml-auto" />
-                  )}
-                </button>
-              ))}
+              {chapters.map((chapter) => {
+                const completion = completionData[chapter.id];
+                return (
+                  <button
+                    key={chapter.id}
+                    onClick={() => scrollToChapter(chapter.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${
+                      activeChapter === chapter.id
+                        ? darkMode
+                          ? 'bg-slate-800 text-white'
+                          : 'bg-blue-50 text-blue-600'
+                        : darkMode
+                        ? 'text-slate-300 hover:bg-slate-800'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <chapter.icon className="w-4.5 h-4.5" strokeWidth={1.5} />
+                    <div className="flex-1">
+                      <span className="font-medium text-sm">{chapter.label}</span>
+                      {completion && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full ${
+                                completion.percentage === 100
+                                  ? 'bg-green-500'
+                                  : completion.percentage >= 60
+                                  ? 'bg-yellow-500'
+                                  : 'bg-orange-500'
+                              }`}
+                              style={{ width: `${completion.percentage}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-400">{completion.percentage}%</span>
+                        </div>
+                      )}
+                    </div>
+                    {activeChapter === chapter.id && (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </nav>
 
@@ -279,7 +341,7 @@ export default function HomeBaseManual() {
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="flex-1 flex justify-end">
+          <div className="flex-1 flex justify-end gap-3">
             <button
               onClick={() => setSearchOpen(true)}
               className={`flex items-center gap-3 px-4 py-2 ${
@@ -291,6 +353,16 @@ export default function HomeBaseManual() {
               <kbd className="hidden md:inline-flex items-center px-2 py-0.5 text-xs bg-white border border-gray-200 rounded">
                 ⌘K
               </kbd>
+            </button>
+            <button
+              onClick={() => {
+                setSelectedSection(activeChapter);
+                setShowAddInfoModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
+            >
+              <Info className="w-4 h-4" />
+              <span className="text-sm hidden sm:inline">Add Info</span>
             </button>
           </div>
         </header>
@@ -379,17 +451,32 @@ export default function HomeBaseManual() {
                     value="Redwood_Mesh_Pro"
                     note="Password: TreeHouse2026!"
                     copyValue="TreeHouse2026!"
-                  />
+                  >
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span>Source: Manual Entry</span>
+                      </div>
+                    </div>
+                  </DataCard>
 
                   <DataCard icon={Key} label="Front Door Access" value="Yale Assure Lock" note="Code: 4821#">
-                    <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
                       <CopyButton text="4821#" label="Door Code" />
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span>Source: Smart Lock App</span>
+                      </div>
                     </div>
                   </DataCard>
 
                   <DataCard icon={Key} label="Garage Access" value="LiftMaster Opener" note="Code: 8900">
-                    <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
                       <CopyButton text="8900" label="Garage Code" />
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                        <span>Source: Owner Manual</span>
+                      </div>
                     </div>
                   </DataCard>
 
@@ -408,7 +495,71 @@ export default function HomeBaseManual() {
                         <span className="font-medium text-gray-900">Friday</span>
                       </div>
                     </div>
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span>Source: HOA Schedule</span>
+                      </div>
+                    </div>
                   </DataCard>
+                </div>
+              </motion.div>
+            </section>
+
+            {/* CHAPTER 1.5: PROPERTY DETAILS */}
+            <section id="chapter-property" className="scroll-mt-24">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex items-center gap-3 mb-8">
+                  <Home className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-900'}`} />
+                  <h2 className={`text-3xl font-light tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Property Overview
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4">
+                      Property Information
+                    </h3>
+                    <div className="space-y-3">
+                      <SpecRow label="Year Built" value="1987" />
+                      <SpecRow label="Total Square Feet" value="2,847 sq ft" />
+                      <SpecRow label="Lot Size" value="0.31 acres (13,504 sq ft)" />
+                      <SpecRow label="Bedrooms" value="4" />
+                      <SpecRow label="Bathrooms" value="3.5" />
+                      <SpecRow label="Stories" value="2" />
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span>Source: County Records & Appraisal</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4">
+                      Property Tax & Legal
+                    </h3>
+                    <div className="space-y-3">
+                      <SpecRow label="Parcel Number" value="046-231-18" />
+                      <SpecRow label="Property Tax" value="$12,847/year" />
+                      <SpecRow label="Last Sale Date" value="June 2019" />
+                      <SpecRow label="Last Sale Price" value="$1,850,000" />
+                      <SpecRow label="Zoning" value="R-1 (Single Family)" />
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span>Source: Public Records</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             </section>
@@ -587,7 +738,143 @@ export default function HomeBaseManual() {
               </motion.div>
             </section>
 
-            {/* CHAPTER 4: MECHANICAL */}
+            {/* CHAPTER 4: APPLIANCES */}
+            <section id="chapter-appliances" className="scroll-mt-24">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex items-center gap-3 mb-8">
+                  <Settings className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-900'}`} />
+                  <h2 className={`text-3xl font-light tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Appliances & Equipment
+                  </h2>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Refrigerator */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                        <Settings className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 mb-1">Refrigerator</h3>
+                        <p className="text-gray-600">Sub-Zero BI-42U Built-In</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span className="text-green-600 font-medium">Active Warranty</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Model</p>
+                        <p className="font-medium text-gray-900">BI-42UFD/S/TH</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Installed</p>
+                        <p className="font-medium text-gray-900">March 2021</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Warranty Until</p>
+                        <p className="font-medium text-gray-900">March 2026</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Serial Number</p>
+                        <p className="font-medium text-gray-900 font-mono text-xs">20210312847</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                      <span>Source: Purchase Receipt & Warranty Card</span>
+                    </div>
+                  </div>
+
+                  {/* Dishwasher */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-12 h-12 bg-cyan-50 rounded-xl flex items-center justify-center">
+                        <Droplets className="w-6 h-6 text-cyan-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 mb-1">Dishwasher</h3>
+                        <p className="text-gray-600">Bosch 800 Series</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                        <span className="text-yellow-600 font-medium">No Warranty Info</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Model</p>
+                        <p className="font-medium text-gray-900">SHPM88Z75N</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Installed</p>
+                        <p className="font-medium text-gray-900">Approx. 2020</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Finish</p>
+                        <p className="font-medium text-gray-900">Stainless Steel</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Noise Level</p>
+                        <p className="font-medium text-gray-900">42 dB</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                      <span>Source: Visual Inspection (Missing documentation)</span>
+                    </div>
+                  </div>
+
+                  {/* Range/Oven */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center">
+                        <Flame className="w-6 h-6 text-orange-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 mb-1">Range & Oven</h3>
+                        <p className="text-gray-600">Wolf 36" Dual Fuel Range</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span className="text-green-600 font-medium">Under Warranty</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Model</p>
+                        <p className="font-medium text-gray-900">DF366</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Installed</p>
+                        <p className="font-medium text-gray-900">January 2022</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">BTU Rating</p>
+                        <p className="font-medium text-gray-900">20,000 BTU</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Fuel Type</p>
+                        <p className="font-medium text-gray-900">Gas + Electric</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                      <span>Source: Purchase Invoice & Installation Photos</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </section>
+
+            {/* CHAPTER 5: MECHANICAL */}
             <section id="chapter-mechanical" className="scroll-mt-24">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -620,6 +907,12 @@ export default function HomeBaseManual() {
                           <div>
                             <p className="text-gray-500">Serial Number</p>
                             <p className="font-mono text-gray-900">A492194</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <div className="w-2 h-2 bg-green-500 rounded-full" />
+                            <span>Source: Installation Invoice</span>
                           </div>
                         </div>
                       </div>
@@ -692,7 +985,67 @@ export default function HomeBaseManual() {
               </motion.div>
             </section>
 
-            {/* CHAPTER 5: EXTERIOR */}
+            {/* CHAPTER 6: LANDSCAPE */}
+            <section id="chapter-landscape" className="scroll-mt-24">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex items-center gap-3 mb-8">
+                  <Trees className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-900'}`} />
+                  <h2 className={`text-3xl font-light tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Landscape & Plants
+                  </h2>
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-6">
+                  <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4">
+                    Tree Inventory
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <Trees className="w-5 h-5 text-green-700" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">Coast Redwood (3)</h4>
+                        <p className="text-sm text-gray-600 mt-1">Front Yard · Planted 1987</p>
+                        <p className="text-xs text-gray-500 mt-1">Height: 65-70 ft · Health: Excellent</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                        <span className="text-yellow-600">Needs Documentation</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <Trees className="w-5 h-5 text-green-700" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">Japanese Maple (2)</h4>
+                        <p className="text-sm text-gray-600 mt-1">Back Yard · Planted 2015</p>
+                        <p className="text-xs text-gray-500 mt-1">Height: 12-15 ft · Health: Good</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                        <span className="text-yellow-600">Missing Photos</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-gray-100">
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                      <span>Source: Partial - Needs arborist report</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </section>
+
+            {/* CHAPTER 7: EXTERIOR */}
             <section id="chapter-exterior" className="scroll-mt-24">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -780,7 +1133,58 @@ export default function HomeBaseManual() {
               </motion.div>
             </section>
 
-            {/* CHAPTER 6: EMERGENCY */}
+            {/* CHAPTER 8: SMART SYSTEMS */}
+            <section id="chapter-systems" className="scroll-mt-24">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex items-center gap-3 mb-8">
+                  <Zap className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-900'}`} />
+                  <h2 className={`text-3xl font-light tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Smart Home Systems
+                  </h2>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="font-semibold text-gray-900 mb-4">Security System</h3>
+                    <div className="space-y-3">
+                      <SpecRow label="Provider" value="ADT Pulse" />
+                      <SpecRow label="Control Panel" value="Kitchen Entrance" />
+                      <SpecRow label="Master Code" value="****" sublabel="Contact owner for code" />
+                      <SpecRow label="Monitoring" value="24/7 Active" />
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span>Source: Security Contract</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="font-semibold text-gray-900 mb-4">Smart Thermostat</h3>
+                    <div className="space-y-3">
+                      <SpecRow label="Brand" value="Nest Learning Thermostat" />
+                      <SpecRow label="Location" value="Hallway, Main Floor" />
+                      <SpecRow label="WiFi Connected" value="Yes" />
+                      <SpecRow label="App Control" value="Nest App" />
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span>Source: Installation Record</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </section>
+
+            {/* CHAPTER 9: EMERGENCY */}
             <section id="chapter-emergency" className="scroll-mt-24">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -904,6 +1308,13 @@ export default function HomeBaseManual() {
           </div>
         </main>
       </div>
+
+      {/* Add Info Modal */}
+      <AddInfoModal
+        isOpen={showAddInfoModal}
+        onClose={() => setShowAddInfoModal(false)}
+        section={selectedSection}
+      />
 
       {/* Search Overlay */}
       <AnimatePresence>
