@@ -33,7 +33,6 @@ import {
 // Navigation Component
 const Navigation = ({ activeView, setActiveView, isEmergency }) => {
   const navItems = [
-    { id: 'dashboard', icon: Home, label: 'Vitals' },
     { id: 'assistant', icon: MessageCircle, label: 'Ask' },
     { id: 'rooms', icon: Grid3X3, label: 'Rooms' },
     { id: 'emergency', icon: AlertTriangle, label: 'Emergency' },
@@ -706,12 +705,12 @@ const EmergencyView = () => {
 
 // Main App Component
 export default function HomeBase() {
-  const [activeView, setActiveView] = useState('dashboard');
+  const [activeView, setActiveView] = useState('home');
   const isEmergency = activeView === 'emergency';
 
   const renderView = () => {
     switch (activeView) {
-      case 'dashboard':
+      case 'home':
         return <DashboardView />;
       case 'assistant':
         return <AssistantView />;

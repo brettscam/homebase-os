@@ -1119,6 +1119,23 @@ export default function HomeBaseManual() {
                   </h2>
                 </div>
 
+                {/* Electrical Panel with Fuse Box Diagram */}
+                <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm mb-4">
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-14 h-14 bg-yellow-50 rounded-2xl flex items-center justify-center flex-shrink-0">
+                      <Zap className="w-7 h-7 text-yellow-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">Electrical Panel</h3>
+                      <p className="text-gray-600 mb-2">Garage · Panel A</p>
+                      <p className="text-sm text-gray-500">
+                        200A Main Panel · 16 Circuit Breakers
+                      </p>
+                    </div>
+                  </div>
+                  <FuseBoxDiagram darkMode={false} />
+                </div>
+
                 <div className="space-y-4">
                   {/* Water Heater */}
                   <div className="bg-white rounded-2xl p-6 border border-gray-100">
