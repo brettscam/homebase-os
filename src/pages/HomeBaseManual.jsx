@@ -37,6 +37,7 @@ import {
 import { toast } from 'sonner';
 import HouseModel3D from '../components/house/HouseModel3D';
 import AddInfoModal from '../components/house/AddInfoModal';
+import FuseBoxDiagram from '../components/house/FuseBoxDiagram';
 
 // Copy to Clipboard Component
 const CopyButton = ({ text, label }) => {
