@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { base44 } from '@/api/base44Client';
 import { 
   Home, 
   MessageCircle, 
@@ -25,7 +26,8 @@ import {
   Ruler,
   Palette,
   Refrigerator,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 
 // Navigation Component
@@ -224,20 +226,115 @@ const DashboardView = () => (
 
 // AI Assistant View
 const AssistantView = () => {
-  const [showChat, setShowChat] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleAsk = () => {
-    setIsListening(true);
-    setTimeout(() => {
-      setIsListening(false);
-      setShowChat(true);
-    }, 1500);
+  const homeContext = `
+You are HomeBase AI, an intelligent assistant for The Miller Residence in Mill Valley, CA. 
+You have complete knowledge of this home and can answer questions about it.
+
+HOME SPECIFICATIONS:
+- Year Built: 1987
+- Total Square Feet: 2,847 sq ft
+- Lot Size: 0.31 acres
+- Bedrooms: 4, Bathrooms: 3.5
+- Stories: 2
+
+ROOMS & DIMENSIONS:
+- Kitchen: 16'4" × 18'2" (297 sq ft), Ceiling: 9'6", Windows: 2 casement (Milgard Tuscany), Flooring: White Oak 7" wide plank
+- Living Room: 18' × 22'
+- Master Bedroom: 16' × 18'
+- Bedroom 2: 12' × 14'
+- Bedroom 3: 12' × 14'
+- Bathroom: 8' × 10'
+- Dining Room: 12' × 14'
+
+PAINT COLORS:
+- Walls: Benjamin Moore "Chantilly Lace" (OC-65)
+- Trim: Benjamin Moore "White Dove" (OC-17)
+- Accent/Cabinets: Farrow & Ball "Hague Blue" (No. 30)
+
+WINDOWS:
+Kitchen Windows: 2× Casement, Milgard Tuscany Series
+- Rough Opening: 36"w × 48"h
+- Daylight Opening: 32"w × 44"h
+
+APPLIANCES:
+- Refrigerator: Sub-Zero BI-42U (Installed March 2021, Warranty until March 2026)
+- Dishwasher: Bosch 800 Series SHPM88Z75N
+- Range: Wolf 36" Dual Fuel DF366 (Installed January 2022)
+
+MECHANICAL SYSTEMS:
+- Water Heater: Rheem Performance Platinum 50 Gallon (2023)
+- HVAC: Nest Learning Thermostat (Hallway, Main Floor)
+- Electrical Panel: 200A Main Panel, 16 Circuit Breakers, Located in Garage
+
+EMERGENCY SHUTOFFS:
+- Water Main: Front Yard, Blue Lid, Turn clockwise to close
+- Gas Main: North Wall, Wrench attached, Turn perpendicular to pipe
+- Electrical Panel: Garage Panel A, Main breaker top left
+
+SMART HOME:
+- WiFi: Redwood_Mesh_Pro (Password: TreeHouse2026!)
+- Front Door: Yale Assure Lock (Code: 4821#)
+- Garage: LiftMaster Opener (Code: 8900)
+- Security: ADT Pulse, Control Panel at Kitchen Entrance
+
+EXTERIOR:
+- Roof: GAF Timberline Asphalt Shingle (Installed 2018)
+- Gutters: Seamless Aluminum 5", French Drain System
+- Irrigation: Hunter X-Core Controller (4 zones, Controller in Garage)
+
+LANDSCAPE:
+- Coast Redwood (3) - Front Yard, 65-70 ft tall, Planted 1987
+- Japanese Maple (2) - Back Yard, 12-15 ft tall, Planted 2015
+
+When answering questions:
+1. Be helpful and conversational
+2. For window blind measurements, use the rough opening dimensions (subtract 1/4" for clearance)
+3. Provide specific details from the home data
+4. If asked about something not in the data, say so politely
+5. For measurements, be precise and include both imperial and metric when helpful
+`;
+
+  const handleSendMessage = async (text) => {
+    const question = text || inputValue;
+    if (!question.trim() || isLoading) return;
+
+    const userMessage = { role: 'user', content: question };
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    setIsLoading(true);
+
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `${homeContext}\n\nUser Question: ${question}\n\nProvide a helpful, accurate answer based on the home data above.`,
+      });
+
+      const assistantMessage = { role: 'assistant', content: response };
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      const errorMessage = { 
+        role: 'assistant', 
+        content: 'Sorry, I encountered an error. Please try again.' 
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const suggestedQuestions = [
+    'Where is the water shutoff?',
+    'What paint is on the walls?',
+    'What size blinds do I need for the kitchen windows?',
+    'When was the roof replaced?'
+  ];
 
   return (
     <div className="min-h-screen bg-[#F9F9F9]">
-      <div className="px-6 pt-8">
+      <div className="px-6 pt-8 pb-24">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -247,106 +344,88 @@ const AssistantView = () => {
           <h1 className="text-3xl font-light text-gray-900 tracking-tight">Ask HomeBase</h1>
         </motion.div>
 
-        <AnimatePresence mode="wait">
-          {!showChat ? (
-            <motion.div
-              key="input"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-20"
-            >
-              <motion.button
-                onClick={handleAsk}
-                className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 ${
-                  isListening 
-                    ? 'bg-blue-600 shadow-xl shadow-blue-200' 
-                    : 'bg-white shadow-lg hover:shadow-xl border border-gray-100'
-                }`}
-                animate={isListening ? { scale: [1, 1.1, 1] } : {}}
-                transition={{ repeat: isListening ? Infinity : 0, duration: 1.5 }}
+        {messages.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center py-12"
+          >
+            <div className="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
+              <MessageCircle className="w-10 h-10 text-blue-600" />
+            </div>
+            <p className="text-gray-500 text-center mb-8">
+              Ask me anything about your home
+            </p>
+            
+            <div className="space-y-3 w-full max-w-lg">
+              <p className="text-xs font-medium text-gray-400 tracking-widest uppercase text-center mb-4">Suggested Questions</p>
+              {suggestedQuestions.map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSendMessage(q)}
+                  className="w-full text-left px-5 py-4 bg-white rounded-2xl text-gray-700 hover:bg-gray-50 transition-colors border border-gray-100"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        ) : (
+          <div className="space-y-6 max-w-2xl">
+            {messages.map((message, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <Mic className={`w-10 h-10 ${isListening ? 'text-white' : 'text-gray-400'}`} strokeWidth={1.5} />
-              </motion.button>
-              <p className="text-gray-400 mt-8 text-center">
-                {isListening ? 'Listening...' : 'Tap to ask a question'}
-              </p>
-              
-              <div className="mt-12 space-y-3 w-full max-w-sm">
-                <p className="text-xs font-medium text-gray-400 tracking-widest uppercase text-center mb-4">Suggested</p>
-                {['Where is the water shutoff?', 'What paint is on the walls?', 'When was the roof replaced?'].map((q, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setShowChat(true)}
-                    className="w-full text-left px-5 py-4 bg-white rounded-2xl text-gray-600 hover:bg-gray-50 transition-colors border border-gray-100"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="chat"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
+                <div className={`${
+                  message.role === 'user'
+                    ? 'bg-blue-600 text-white rounded-3xl rounded-br-lg'
+                    : 'bg-white text-gray-800 rounded-3xl rounded-bl-lg shadow-sm border border-gray-100'
+                } px-5 py-3 max-w-[85%]`}>
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                </div>
+              </motion.div>
+            ))}
+            
+            {isLoading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex justify-start"
+              >
+                <div className="bg-white px-5 py-3 rounded-3xl rounded-bl-lg shadow-sm border border-gray-100">
+                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                </div>
+              </motion.div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Fixed Input Bar */}
+      <div className="fixed bottom-0 left-64 right-0 bg-white border-t border-gray-100 p-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-gray-50 rounded-full flex items-center p-2 border border-gray-200">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder="Ask about your home..."
+              className="flex-1 px-4 py-2 bg-transparent outline-none text-gray-700"
+              disabled={isLoading}
+            />
+            <button
+              onClick={() => handleSendMessage()}
+              disabled={isLoading || !inputValue.trim()}
+              className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
             >
-              {/* User Message */}
-              <div className="flex justify-end">
-                <div className="bg-blue-600 text-white px-5 py-3 rounded-3xl rounded-br-lg max-w-[80%]">
-                  <p>Where is the water shutoff?</p>
-                </div>
-              </div>
-
-              {/* Bot Response */}
-              <div className="flex justify-start">
-                <div className="bg-white px-5 py-4 rounded-3xl rounded-bl-lg max-w-[85%] shadow-sm border border-gray-100">
-                  <p className="text-gray-800 mb-4">
-                    The <strong>Main Water Shutoff</strong> is located in your <strong>Front Yard</strong>, marked with a blue lid.
-                  </p>
-                  
-                  {/* Map Placeholder */}
-                  <div className="relative bg-gradient-to-br from-emerald-50 to-blue-50 rounded-2xl p-6 mb-4">
-                    <div className="flex items-center justify-center">
-                      <div className="relative">
-                        <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                          <Droplets className="w-8 h-8 text-white" />
-                        </div>
-                        <motion.div
-                          className="absolute -inset-2 border-2 border-blue-400 rounded-full"
-                          animate={{ scale: [1, 1.3, 1], opacity: [0.8, 0, 0.8] }}
-                          transition={{ repeat: Infinity, duration: 2 }}
-                        />
-                      </div>
-                    </div>
-                    <p className="text-center text-sm text-gray-500 mt-4">Front Yard · Blue Lid</p>
-                  </div>
-
-                  <button className="flex items-center gap-2 text-blue-600 text-sm font-medium">
-                    <MapPin className="w-4 h-4" />
-                    View on Property Map
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Input Bar */}
-              <div className="mt-8">
-                <div className="bg-white rounded-full shadow-lg border border-gray-100 flex items-center p-2">
-                  <input
-                    type="text"
-                    placeholder="Ask another question..."
-                    className="flex-1 px-4 py-2 bg-transparent outline-none text-gray-700"
-                  />
-                  <button className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                    <Send className="w-4 h-4 text-white" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <Send className="w-4 h-4 text-white" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
