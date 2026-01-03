@@ -1256,9 +1256,9 @@ export default function HomeBaseManual() {
                     </div>
                   </div>
 
-                  {/* Electrical Panel */}
+                  {/* Electrical Panel with Fuse Box Diagram */}
                   <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700">
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-4 mb-6">
                       <div className="w-14 h-14 bg-yellow-500 rounded-2xl flex items-center justify-center flex-shrink-0">
                         <Zap className="w-7 h-7 text-white" />
                       </div>
@@ -1266,7 +1266,7 @@ export default function HomeBaseManual() {
                         <h3 className="text-lg font-semibold text-white mb-1">Electrical Panel</h3>
                         <p className="text-slate-300 mb-2">Garage · Panel A</p>
                         <p className="text-sm text-slate-400">
-                          Main breaker located top left. Flip down to disconnect.
+                          200A Main Panel · 16 Circuit Breakers
                         </p>
                         <button className="mt-4 flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl transition-colors text-sm">
                           <MapPin className="w-4 h-4" />
@@ -1274,6 +1274,7 @@ export default function HomeBaseManual() {
                         </button>
                       </div>
                     </div>
+                    <FuseBoxDiagram darkMode={true} />
                   </div>
                 </div>
 
