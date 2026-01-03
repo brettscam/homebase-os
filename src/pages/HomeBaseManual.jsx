@@ -31,7 +31,8 @@ import {
   Settings,
   Target,
   CircleDot,
-  Box
+  Box,
+  Phone
 } from 'lucide-react';
 import { toast } from 'sonner';
 import HouseModel3D from '../components/house/HouseModel3D';
