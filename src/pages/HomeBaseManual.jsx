@@ -104,7 +104,7 @@ const SpecRow = ({ label, value, sublabel }) => (
 
 // Main Application
 export default function HomeBaseManual() {
-  const [activeChapter, setActiveChapter] = useState('vitals');
+  const [activeChapter, setActiveChapter] = useState('model3d');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -130,15 +130,15 @@ export default function HomeBaseManual() {
   const overallCompletion = Math.round((totalCompleted / totalItems) * 100);
 
   const chapters = [
-    { id: 'model3d', label: '3D Model', icon: Box },
-    { id: 'vitals', label: 'Vitals', icon: Activity },
-    { id: 'spaces', label: 'Spaces', icon: Layout },
-    { id: 'aesthetics', label: 'Aesthetics', icon: Palette },
-    { id: 'mechanical', label: 'Mechanical Systems', icon: Wrench },
+    { id: 'vitals', label: 'Property Overview', icon: Activity },
+    { id: 'model3d', label: '3D Floor Plan', icon: Box },
+    { id: 'spaces', label: 'Rooms & Spaces', icon: Layout },
     { id: 'appliances', label: 'Appliances', icon: Settings },
+    { id: 'mechanical', label: 'Mechanical', icon: Wrench },
+    { id: 'systems', label: 'Smart Systems', icon: Zap },
+    { id: 'aesthetics', label: 'Paint & Finishes', icon: Palette },
     { id: 'exterior', label: 'Exterior', icon: Building2 },
     { id: 'landscape', label: 'Landscape', icon: Trees },
-    { id: 'systems', label: 'Smart Systems', icon: Zap },
     { id: 'emergency', label: 'Emergency', icon: AlertTriangle },
   ];
 

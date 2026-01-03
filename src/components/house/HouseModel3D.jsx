@@ -26,61 +26,79 @@ export default function HouseModel3D({ onRoomClick, darkMode }) {
   const [isRotating, setIsRotating] = useState(false);
   const [showInfo, setShowInfo] = useState(true);
 
-  // Room definitions with colors and positions
+  // Room definitions - architectural floor plan style
   const rooms = {
-    kitchen: {
-      name: 'Kitchen',
-      color: 0x2563eb,
-      hoverColor: 0x3b82f6,
-      position: { x: -8, z: -8 },
-      size: { width: 6, depth: 6, height: 3 },
-      section: 'spaces',
-      description: '16\' 4" × 18\' 2"'
-    },
     livingRoom: {
       name: 'Living Room',
-      color: 0x10b981,
-      hoverColor: 0x34d399,
-      position: { x: 0, z: -8 },
-      size: { width: 8, depth: 6, height: 3 },
+      color: 0xf5f5f0,
+      hoverColor: 0xe8e8dd,
+      position: { x: -6, z: -4 },
+      size: { width: 8, depth: 7, height: 0.1 },
       section: 'spaces',
-      description: 'Main living area'
+      description: '18\' × 22\''
+    },
+    kitchen: {
+      name: 'Kitchen',
+      color: 0xf5f5f0,
+      hoverColor: 0xe8e8dd,
+      position: { x: 4, z: -4 },
+      size: { width: 6, depth: 5, height: 0.1 },
+      section: 'spaces',
+      description: '14\' × 16\''
+    },
+    dining: {
+      name: 'Dining',
+      color: 0xf5f5f0,
+      hoverColor: 0xe8e8dd,
+      position: { x: -1, z: -4 },
+      size: { width: 5, depth: 5, height: 0.1 },
+      section: 'spaces',
+      description: '12\' × 14\''
     },
     masterBedroom: {
       name: 'Master Bedroom',
-      color: 0x8b5cf6,
-      hoverColor: 0xa78bfa,
-      position: { x: 8, z: -8 },
-      size: { width: 6, depth: 6, height: 3 },
+      color: 0xf5f5f0,
+      hoverColor: 0xe8e8dd,
+      position: { x: -6, z: 4 },
+      size: { width: 7, depth: 6, height: 0.1 },
       section: 'spaces',
-      description: 'Primary suite'
-    },
-    garage: {
-      name: 'Garage',
-      color: 0x64748b,
-      hoverColor: 0x94a3b8,
-      position: { x: -8, z: 2 },
-      size: { width: 6, depth: 6, height: 3 },
-      section: 'mechanical',
-      description: 'Two-car garage'
-    },
-    dining: {
-      name: 'Dining Room',
-      color: 0xf59e0b,
-      hoverColor: 0xfbbf24,
-      position: { x: 0, z: 2 },
-      size: { width: 6, depth: 6, height: 3 },
-      section: 'spaces',
-      description: 'Formal dining'
+      description: '16\' × 18\''
     },
     bedroom2: {
       name: 'Bedroom 2',
-      color: 0xec4899,
-      hoverColor: 0xf472b6,
-      position: { x: 8, z: 2 },
-      size: { width: 5, depth: 5, height: 3 },
+      color: 0xf5f5f0,
+      hoverColor: 0xe8e8dd,
+      position: { x: 2, z: 4 },
+      size: { width: 5, depth: 5, height: 0.1 },
       section: 'spaces',
-      description: 'Guest bedroom'
+      description: '12\' × 14\''
+    },
+    bedroom3: {
+      name: 'Bedroom 3',
+      color: 0xf5f5f0,
+      hoverColor: 0xe8e8dd,
+      position: { x: 8, z: 4 },
+      size: { width: 5, depth: 5, height: 0.1 },
+      section: 'spaces',
+      description: '12\' × 14\''
+    },
+    bathroom: {
+      name: 'Bathroom',
+      color: 0xe8f4f8,
+      hoverColor: 0xd4e8f0,
+      position: { x: 8, z: -1 },
+      size: { width: 4, depth: 3, height: 0.1 },
+      section: 'spaces',
+      description: '8\' × 10\''
+    },
+    patio: {
+      name: 'Patio',
+      color: 0xd4c4b0,
+      hoverColor: 0xc4b4a0,
+      position: { x: -6, z: -11 },
+      size: { width: 8, depth: 4, height: 0.05 },
+      section: 'exterior',
+      description: 'Outdoor space'
     },
   };
 
@@ -92,14 +110,14 @@ export default function HouseModel3D({ onRoomClick, darkMode }) {
     scene.background = new THREE.Color(darkMode ? 0x0f172a : 0xf9f9f9);
     sceneRef.current = scene;
 
-    // Camera setup
+    // Camera setup - bird's eye view
     const camera = new THREE.PerspectiveCamera(
-      45,
+      50,
       containerRef.current.clientWidth / containerRef.current.clientHeight,
       0.1,
       1000
     );
-    camera.position.set(25, 20, 25);
+    camera.position.set(0, 28, 15);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
@@ -146,138 +164,138 @@ export default function HouseModel3D({ onRoomClick, darkMode }) {
     gridHelper.position.y = 0.01;
     scene.add(gridHelper);
 
-    // Create house structure
+    // Create house structure - architectural style
     const houseGroup = new THREE.Group();
+    const wallHeight = 2.8;
+    const wallThickness = 0.15;
 
-    // Create rooms with more architectural detail
+    // Create floor for each room
     Object.entries(rooms).forEach(([key, room]) => {
-      // Main room volume
-      const roomGeometry = new THREE.BoxGeometry(
+      const floorGeometry = new THREE.BoxGeometry(
         room.size.width,
         room.size.height,
         room.size.depth
       );
 
-      const roomMaterial = new THREE.MeshStandardMaterial({
-        color: room.color,
-        roughness: 0.7,
-        metalness: 0.1,
-        transparent: true,
-        opacity: 0.75
-      });
-
-      const roomMesh = new THREE.Mesh(roomGeometry, roomMaterial);
-      roomMesh.position.set(
-        room.position.x,
-        room.size.height / 2,
-        room.position.z
-      );
-      roomMesh.castShadow = true;
-      roomMesh.receiveShadow = true;
-      roomMesh.userData = { roomKey: key, roomData: room };
-
-      // Enhanced edges for architectural look
-      const edges = new THREE.EdgesGeometry(roomGeometry);
-      const lineMaterial = new THREE.LineBasicMaterial({ 
-        color: darkMode ? 0xffffff : 0x111827,
-        linewidth: 2,
-        transparent: true,
-        opacity: 0.6
-      });
-      const wireframe = new THREE.LineSegments(edges, lineMaterial);
-      roomMesh.add(wireframe);
-
-      // Add floor detail
-      const floorGeometry = new THREE.PlaneGeometry(room.size.width - 0.2, room.size.depth - 0.2);
       const floorMaterial = new THREE.MeshStandardMaterial({
-        color: darkMode ? 0x2d3748 : 0xf5f5f5,
+        color: room.color,
         roughness: 0.9,
-        metalness: 0.1
+        metalness: 0.05,
       });
+
       const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-      floor.rotation.x = -Math.PI / 2;
       floor.position.set(room.position.x, 0.05, room.position.z);
       floor.receiveShadow = true;
+      floor.userData = { roomKey: key, roomData: room };
       houseGroup.add(floor);
 
-      houseGroup.add(roomMesh);
+      // Add subtle edge lines
+      const edges = new THREE.EdgesGeometry(floorGeometry);
+      const edgeMaterial = new THREE.LineBasicMaterial({ 
+        color: darkMode ? 0x475569 : 0xd1d5db,
+        linewidth: 1
+      });
+      const edgeLines = new THREE.LineSegments(edges, edgeMaterial);
+      floor.add(edgeLines);
 
-      // Add room label (floating text plane)
+      // Add room label on floor
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       canvas.width = 512;
-      canvas.height = 128;
-      
-      context.fillStyle = darkMode ? '#1e293b' : '#ffffff';
+      canvas.height = 256;
+
+      context.fillStyle = 'rgba(0, 0, 0, 0)';
       context.fillRect(0, 0, canvas.width, canvas.height);
-      
-      context.font = 'bold 48px Inter, sans-serif';
-      context.fillStyle = darkMode ? '#ffffff' : '#111827';
+
+      context.font = 'bold 42px Inter, sans-serif';
+      context.fillStyle = darkMode ? '#94a3b8' : '#64748b';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      context.fillText(room.name, canvas.width / 2, canvas.height / 2);
-      
+      context.fillText(room.name, canvas.width / 2, canvas.height / 2 - 20);
+
+      context.font = '32px Inter, sans-serif';
+      context.fillStyle = darkMode ? '#64748b' : '#94a3b8';
+      context.fillText(room.description, canvas.width / 2, canvas.height / 2 + 30);
+
       const texture = new THREE.CanvasTexture(canvas);
       const labelMaterial = new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
-        opacity: 0.9,
-        side: THREE.DoubleSide
+        opacity: 0.8,
+        depthWrite: false
       });
-      
-      const labelGeometry = new THREE.PlaneGeometry(4, 1);
+
+      const labelGeometry = new THREE.PlaneGeometry(room.size.width * 0.8, room.size.depth * 0.4);
       const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial);
+      labelMesh.rotation.x = -Math.PI / 2;
       labelMesh.position.set(
         room.position.x,
-        room.size.height + 1,
+        0.12,
         room.position.z
       );
-      labelMesh.lookAt(camera.position);
       houseGroup.add(labelMesh);
-    });
+      });
 
-    // Add exterior walls with depth
-    const wallHeight = 3.5;
-    const wallThickness = 0.3;
-    const wallColor = darkMode ? 0x334155 : 0xe5e7eb;
+    // Interior walls - architectural style (white walls)
+    const wallColor = darkMode ? 0xf0f0f0 : 0xffffff;
+    const interiorWalls = [
+      // Living room boundaries
+      { x: -10, z: -4, width: wallThickness, depth: 7, height: wallHeight },
+      { x: -6, z: -7.5, width: 8, height: wallHeight, depth: wallThickness },
+      { x: -6, z: -0.5, width: 8, height: wallHeight, depth: wallThickness },
 
-    // Create solid exterior walls
-    const walls = [
-      // North wall
-      { x: 0, z: -11, width: 22, depth: wallThickness },
-      // South wall
-      { x: 0, z: 5, width: 22, depth: wallThickness },
-      // East wall
-      { x: 11, z: -3, width: wallThickness, depth: 16 },
-      // West wall
-      { x: -11, z: -3, width: wallThickness, depth: 16 },
+      // Kitchen boundaries
+      { x: 7, z: -4, width: wallThickness, depth: 5, height: wallHeight },
+      { x: 4, z: -6.5, width: 6, height: wallHeight, depth: wallThickness },
+
+      // Bedroom walls
+      { x: -6, z: 1, width: 7, height: wallHeight, depth: wallThickness },
+      { x: -9.5, z: 4, width: wallThickness, depth: 6, height: wallHeight },
+      { x: -2.5, z: 4, width: wallThickness, depth: 6, height: wallHeight },
+
+      { x: 4.5, z: 4, width: wallThickness, depth: 5, height: wallHeight },
+      { x: 2, z: 6.5, width: 5, height: wallHeight, depth: wallThickness },
+
+      // Bathroom walls
+      { x: 8, z: -2.5, width: 4, height: wallHeight, depth: wallThickness },
+      { x: 6, z: -1, width: wallThickness, depth: 3, height: wallHeight },
     ];
 
-    walls.forEach(wall => {
-      const wallGeometry = new THREE.BoxGeometry(wall.width, wallHeight, wall.depth);
+    interiorWalls.forEach(wall => {
+      const wallGeometry = new THREE.BoxGeometry(wall.width, wall.height, wall.depth);
       const wallMaterial = new THREE.MeshStandardMaterial({
         color: wallColor,
-        roughness: 0.8,
-        metalness: 0.2
+        roughness: 0.7,
+        metalness: 0.05
       });
       const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
-      wallMesh.position.set(wall.x, wallHeight / 2, wall.z);
+      wallMesh.position.set(wall.x, wall.height / 2, wall.z);
       wallMesh.castShadow = true;
       wallMesh.receiveShadow = true;
       houseGroup.add(wallMesh);
     });
 
-    // Add roof
-    const roofGeometry = new THREE.BoxGeometry(22.5, 0.3, 16.5);
-    const roofMaterial = new THREE.MeshStandardMaterial({
-      color: darkMode ? 0x1e293b : 0x94a3b8,
-      roughness: 0.9,
-      metalness: 0.1
+    // Outer perimeter walls
+    const exteriorWalls = [
+      { x: 0, z: -13, width: 24, depth: wallThickness, height: wallHeight },
+      { x: 0, z: 7.5, width: 24, depth: wallThickness, height: wallHeight },
+      { x: -12, z: -3, width: wallThickness, depth: 20, height: wallHeight },
+      { x: 12, z: -3, width: wallThickness, depth: 20, height: wallHeight },
+    ];
+
+    exteriorWalls.forEach(wall => {
+      const wallGeometry = new THREE.BoxGeometry(wall.width, wall.height, wall.depth);
+      const wallMaterial = new THREE.MeshStandardMaterial({
+        color: wallColor,
+        roughness: 0.7,
+        metalness: 0.05
+      });
+      const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
+      wallMesh.position.set(wall.x, wall.height / 2, wall.z);
+      wallMesh.castShadow = true;
+      wallMesh.receiveShadow = true;
+      houseGroup.add(wallMesh);
     });
-    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-    roof.position.set(0, wallHeight + 0.15, -3);
-    roof.castShadow = true;
-    houseGroup.add(roof);
 
     scene.add(houseGroup);
 
@@ -441,8 +459,8 @@ export default function HouseModel3D({ onRoomClick, darkMode }) {
 
     window.addEventListener('resize', handleResize);
 
-    // Initial rotation setup
-    rotation = { x: 0.4, y: 0.8 };
+    // Initial rotation setup - top-down angled view
+    rotation = { x: 1.2, y: 0 };
     controls.rotate(0, 0);
 
     // Cleanup
