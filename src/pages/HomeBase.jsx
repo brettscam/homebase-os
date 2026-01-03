@@ -163,63 +163,89 @@ const QuickInfoCard = ({ icon: Icon, title, primary, secondary, color, delay }) 
 
 // Dashboard View
 const DashboardView = () => (
-  <div className="min-h-screen bg-[#F9F9F9]">
-    <div className="px-6 pt-8 pb-8">
+  <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="px-6 pt-16 pb-8 max-w-4xl mx-auto">
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-12"
+        className="text-center mb-16"
       >
-        <p className="text-sm font-medium text-gray-400 tracking-widest uppercase mb-2">Welcome Home</p>
-        <h1 className="text-3xl font-light text-gray-900 tracking-tight">Smith Family</h1>
+        <h1 className="text-5xl font-light text-gray-900 tracking-tight mb-4">
+          Your Complete Home Manual
+        </h1>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Every detail about The Miller Residence in one comprehensive digital manual
+        </p>
       </motion.div>
 
-      <div className="mb-12">
-        <HealthScoreRing score={98} />
-        <motion.p 
-          className="text-center text-sm text-gray-400 mt-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
+      {/* Hero CTA Card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2 }}
+        className="mb-12"
+      >
+        <Link
+          to={createPageUrl('HomeBaseManual')}
+          className="block bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all hover:scale-105 duration-300"
         >
-          All systems operating normally
-        </motion.p>
-      </div>
+          <div className="flex items-start gap-6 mb-6">
+            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0">
+              <Book className="w-8 h-8 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-semibold text-white mb-2">Open Full Manual</h2>
+              <p className="text-blue-100 text-sm leading-relaxed">
+                Interactive 3D floor plan, complete room specs, appliance warranties, emergency shutoffs, and all home documentation
+              </p>
+            </div>
+            <ChevronRight className="w-8 h-8 text-white/80" />
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4 text-white/90 text-sm">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <p className="font-semibold text-lg">100%</p>
+              <p className="text-xs text-white/70">Complete</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <p className="font-semibold text-lg">84</p>
+              <p className="text-xs text-white/70">Data Points</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <p className="font-semibold text-lg">3D</p>
+              <p className="text-xs text-white/70">Floor Plan</p>
+            </div>
+          </div>
+        </Link>
+      </motion.div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <QuickInfoCard
-          icon={Wifi}
-          title="WiFi"
-          primary="Redwood_Mesh"
-          secondary="GiantTrees26!"
-          color="bg-blue-600"
-          delay={0.2}
-        />
-        <QuickInfoCard
-          icon={Key}
-          title="Access"
-          primary="4821#"
-          secondary="Front Door"
-          color="bg-emerald-500"
-          delay={0.3}
-        />
-        <QuickInfoCard
-          icon={Trash2}
-          title="Trash Day"
-          primary="Tuesday"
-          secondary="Recycling + Green"
-          color="bg-amber-500"
-          delay={0.4}
-        />
-        <QuickInfoCard
-          icon={Wind}
-          title="HVAC Filter"
-          primary="Replace Soon"
-          secondary="In 2 weeks"
-          color="bg-purple-500"
-          delay={0.5}
-        />
-      </div>
+      {/* Quick Access Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="mb-8"
+      >
+        <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4 text-center">Quick Access</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <QuickInfoCard
+            icon={Wifi}
+            title="WiFi"
+            primary="Redwood_Mesh"
+            secondary="GiantTrees26!"
+            color="bg-blue-600"
+            delay={0.5}
+          />
+          <QuickInfoCard
+            icon={Key}
+            title="Access"
+            primary="4821#"
+            secondary="Front Door"
+            color="bg-emerald-500"
+            delay={0.6}
+          />
+        </div>
+      </motion.div>
     </div>
   </div>
 );
