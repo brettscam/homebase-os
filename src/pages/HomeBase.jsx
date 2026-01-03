@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 import { 
   Home, 
   MessageCircle, 
@@ -593,6 +595,14 @@ export default function HomeBase() {
 
   return (
     <div className={`min-h-screen ${isEmergency ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}>
+      {/* Navigation to Full Manual */}
+      <Link
+        to={createPageUrl('HomeBaseManual')}
+        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg font-medium text-sm transition-colors flex items-center gap-2"
+      >
+        <span>📖</span>
+        View Full Interactive Manual with 3D Model
+      </Link>
       <AnimatePresence mode="wait">
         <motion.div
           key={activeView}
