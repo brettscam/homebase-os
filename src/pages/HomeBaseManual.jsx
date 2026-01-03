@@ -115,14 +115,15 @@ export default function HomeBaseManual() {
 
   // Completion tracking for each section
   const completionData = {
-    vitals: { completed: 4, total: 6, percentage: 67 },
-    spaces: { completed: 8, total: 12, percentage: 67 },
-    aesthetics: { completed: 5, total: 8, percentage: 63 },
-    mechanical: { completed: 6, total: 10, percentage: 60 },
-    exterior: { completed: 4, total: 7, percentage: 57 },
-    appliances: { completed: 3, total: 8, percentage: 38 },
-    systems: { completed: 5, total: 9, percentage: 56 },
-    landscape: { completed: 2, total: 6, percentage: 33 },
+    vitals: { completed: 6, total: 6, percentage: 100 },
+    spaces: { completed: 12, total: 12, percentage: 100 },
+    aesthetics: { completed: 8, total: 8, percentage: 100 },
+    mechanical: { completed: 10, total: 10, percentage: 100 },
+    exterior: { completed: 7, total: 7, percentage: 100 },
+    appliances: { completed: 8, total: 8, percentage: 100 },
+    systems: { completed: 9, total: 9, percentage: 100 },
+    landscape: { completed: 6, total: 6, percentage: 100 },
+    documents: { completed: 12, total: 12, percentage: 100 },
     emergency: { completed: 6, total: 6, percentage: 100 },
   };
 
@@ -140,6 +141,7 @@ export default function HomeBaseManual() {
     { id: 'aesthetics', label: 'Paint & Finishes', icon: Palette },
     { id: 'exterior', label: 'Exterior', icon: Building2 },
     { id: 'landscape', label: 'Landscape', icon: Trees },
+    { id: 'documents', label: 'Documents', icon: Info },
     { id: 'emergency', label: 'Emergency', icon: AlertTriangle },
   ];
 
@@ -576,68 +578,295 @@ export default function HomeBaseManual() {
                 <div className="flex items-center gap-3 mb-8">
                   <Layout className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-900'}`} />
                   <h2 className={`text-3xl font-light tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Room Specifications
+                    Complete Room Specifications
                   </h2>
                 </div>
 
-                {/* Kitchen Detail */}
-                <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm">
-                  {/* Hero Image */}
-                  <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200">
-                    <img
-                      src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=80"
-                      alt="Kitchen"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2">
-                      <p className="text-sm font-semibold text-gray-900">Kitchen</p>
+                <div className="space-y-8">
+                  {/* Kitchen */}
+                  <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm">
+                    <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200">
+                      <img
+                        src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=80"
+                        alt="Kitchen"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2">
+                        <p className="text-sm font-semibold text-gray-900">Kitchen</p>
+                      </div>
+                    </div>
+                    <div className="p-8 space-y-6">
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Ruler className="w-4.5 h-4.5 text-gray-600" />
+                          <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">Dimensions</h3>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-5">
+                          <SpecRow label="Floor Plan" value={`16' 4" × 18' 2"`} sublabel="Measured wall-to-wall" />
+                          <SpecRow label="Ceiling Height" value={`9' 6"`} sublabel="Standard height" />
+                          <SpecRow label="Square Footage" value="297 sq ft" sublabel="Calculated area" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Target className="w-4.5 h-4.5 text-gray-600" />
+                          <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">Windows</h3>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-5 space-y-3">
+                          <div className="pb-3 border-b border-gray-200">
+                            <p className="text-sm font-semibold text-gray-900 mb-2">Window 1 (Above Sink)</p>
+                            <SpecRow label="Type" value="Casement" sublabel="Milgard Tuscany Series" />
+                            <SpecRow label="Rough Opening" value={`36"w × 48"h`} />
+                            <SpecRow label="Glass Size" value={`32"w × 44"h`} />
+                            <SpecRow label="Blind Size Rec." value={`35.75"w × 47.75"h`} sublabel="Inside mount" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 mb-2">Window 2 (East Wall)</p>
+                            <SpecRow label="Type" value="Casement" sublabel="Milgard Tuscany Series" />
+                            <SpecRow label="Rough Opening" value={`36"w × 48"h`} />
+                            <SpecRow label="Glass Size" value={`32"w × 44"h`} />
+                            <SpecRow label="Blind Size Rec." value={`35.75"w × 47.75"h`} sublabel="Inside mount" />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Sparkles className="w-4.5 h-4.5 text-gray-600" />
+                          <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">Flooring</h3>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-5">
+                          <SpecRow label="Material" value="White Oak Engineered" />
+                          <SpecRow label="Plank Width" value={`7" wide plank`} />
+                          <SpecRow label="Finish" value="Matte Polyurethane" />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="p-8 space-y-6">
-                    {/* Dimensions */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-4">
-                        <Ruler className="w-4.5 h-4.5 text-gray-600" />
-                        <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">
-                          Dimensions
-                        </h3>
+                  {/* Living Room */}
+                  <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm">
+                    <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200">
+                      <img
+                        src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&q=80"
+                        alt="Living Room"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2">
+                        <p className="text-sm font-semibold text-gray-900">Living Room</p>
                       </div>
-                      <div className="bg-gray-50 rounded-2xl p-5">
-                        <SpecRow label="Floor Plan" value={`16' 4" × 18' 2"`} sublabel="Measured wall-to-wall" />
-                        <SpecRow label="Ceiling Height" value={`9' 6"`} sublabel="Standard height" />
-                        <SpecRow label="Square Footage" value="~297 sq ft" sublabel="Calculated area" />
-                        <SpecRow label="Data Source" value="LiDAR Scan" sublabel="Accuracy: ±0.5 inch" />
+                    </div>
+                    <div className="p-8 space-y-6">
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Ruler className="w-4.5 h-4.5 text-gray-600" />
+                          <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">Dimensions</h3>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-5">
+                          <SpecRow label="Floor Plan" value={`18' × 22'`} sublabel="Measured wall-to-wall" />
+                          <SpecRow label="Ceiling Height" value={`10'`} sublabel="Vaulted ceiling" />
+                          <SpecRow label="Square Footage" value="396 sq ft" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Target className="w-4.5 h-4.5 text-gray-600" />
+                          <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">Windows</h3>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-5 space-y-3">
+                          <div className="pb-3 border-b border-gray-200">
+                            <p className="text-sm font-semibold text-gray-900 mb-2">Bay Window (Front)</p>
+                            <SpecRow label="Type" value="3-Panel Bay Window" sublabel="Milgard Tuscany" />
+                            <SpecRow label="Center Panel" value={`60"w × 72"h`} />
+                            <SpecRow label="Side Panels" value={`30"w × 72"h each`} />
+                            <SpecRow label="Blind Size Rec." value="Custom bay window blinds" sublabel="Professional measurement required" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 mb-2">Side Window (West Wall)</p>
+                            <SpecRow label="Rough Opening" value={`48"w × 60"h`} />
+                            <SpecRow label="Glass Size" value={`44"w × 56"h`} />
+                            <SpecRow label="Blind Size Rec." value={`47.75"w × 59.75"h`} sublabel="Inside mount" />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Sparkles className="w-4.5 h-4.5 text-gray-600" />
+                          <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">Flooring</h3>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-5">
+                          <SpecRow label="Material" value="White Oak Engineered" />
+                          <SpecRow label="Plank Width" value={`7" wide plank`} />
+                          <SpecRow label="Finish" value="Matte Polyurethane" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Master Bedroom */}
+                  <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm">
+                    <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200">
+                      <img
+                        src="https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=1200&q=80"
+                        alt="Master Bedroom"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2">
+                        <p className="text-sm font-semibold text-gray-900">Master Bedroom</p>
+                      </div>
+                    </div>
+                    <div className="p-8 space-y-6">
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Ruler className="w-4.5 h-4.5 text-gray-600" />
+                          <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">Dimensions</h3>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-5">
+                          <SpecRow label="Floor Plan" value={`16' × 18'`} />
+                          <SpecRow label="Ceiling Height" value={`9'`} />
+                          <SpecRow label="Square Footage" value="288 sq ft" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Target className="w-4.5 h-4.5 text-gray-600" />
+                          <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">Windows</h3>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-5 space-y-3">
+                          <div className="pb-3 border-b border-gray-200">
+                            <p className="text-sm font-semibold text-gray-900 mb-2">Window 1 (North Wall)</p>
+                            <SpecRow label="Type" value="Double-Hung" sublabel="Andersen 400 Series" />
+                            <SpecRow label="Rough Opening" value={`42"w × 60"h`} />
+                            <SpecRow label="Glass Size" value={`38"w × 56"h`} />
+                            <SpecRow label="Blind Size Rec." value={`41.75"w × 59.75"h`} sublabel="Inside mount" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 mb-2">Window 2 (East Wall)</p>
+                            <SpecRow label="Type" value="Double-Hung" sublabel="Andersen 400 Series" />
+                            <SpecRow label="Rough Opening" value={`42"w × 60"h`} />
+                            <SpecRow label="Glass Size" value={`38"w × 56"h`} />
+                            <SpecRow label="Blind Size Rec." value={`41.75"w × 59.75"h`} sublabel="Inside mount" />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Sparkles className="w-4.5 h-4.5 text-gray-600" />
+                          <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">Flooring</h3>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-5">
+                          <SpecRow label="Material" value="Wool Carpet" sublabel="Karastan Collection" />
+                          <SpecRow label="Color" value="Dove Gray" />
+                          <SpecRow label="Padding" value="8lb Memory Foam" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bedroom 2 & 3 */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Bedroom 2</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-xs font-medium text-gray-400 uppercase mb-2">Dimensions</p>
+                          <SpecRow label="Floor Plan" value={`12' × 14'`} />
+                          <SpecRow label="Ceiling" value={`9'`} />
+                          <SpecRow label="Sq Ft" value="168 sq ft" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-400 uppercase mb-2">Window</p>
+                          <SpecRow label="Type" value="Double-Hung" />
+                          <SpecRow label="Rough Opening" value={`36"w × 48"h`} />
+                          <SpecRow label="Blind Rec." value={`35.75"w × 47.75"h`} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-400 uppercase mb-2">Flooring</p>
+                          <SpecRow label="Material" value="Wool Carpet" />
+                          <SpecRow label="Color" value="Dove Gray" />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Windows */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-4">
-                        <Target className="w-4.5 h-4.5 text-gray-600" />
-                        <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">
-                          Windows
-                        </h3>
-                      </div>
-                      <div className="bg-gray-50 rounded-2xl p-5">
-                        <SpecRow label="Type" value="2× Casement" sublabel="Milgard Tuscany Series" />
-                        <SpecRow label="Rough Opening" value={`36"w × 48"h`} sublabel="Frame dimensions" />
-                        <SpecRow label="Daylight Opening" value={`32"w × 44"h`} sublabel="Visible glass" />
+                    <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Bedroom 3</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-xs font-medium text-gray-400 uppercase mb-2">Dimensions</p>
+                          <SpecRow label="Floor Plan" value={`12' × 14'`} />
+                          <SpecRow label="Ceiling" value={`9'`} />
+                          <SpecRow label="Sq Ft" value="168 sq ft" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-400 uppercase mb-2">Window</p>
+                          <SpecRow label="Type" value="Double-Hung" />
+                          <SpecRow label="Rough Opening" value={`36"w × 48"h`} />
+                          <SpecRow label="Blind Rec." value={`35.75"w × 47.75"h`} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-400 uppercase mb-2">Flooring</p>
+                          <SpecRow label="Material" value="Wool Carpet" />
+                          <SpecRow label="Color" value="Dove Gray" />
+                        </div>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Flooring */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-4">
-                        <Sparkles className="w-4.5 h-4.5 text-gray-600" />
-                        <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase">
-                          Flooring
-                        </h3>
+                  {/* Dining Room */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Dining Room</h3>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <p className="text-xs font-medium text-gray-400 uppercase mb-2">Dimensions</p>
+                        <div className="bg-gray-50 rounded-xl p-4">
+                          <SpecRow label="Floor Plan" value={`12' × 14'`} />
+                          <SpecRow label="Ceiling" value={`9' 6"`} />
+                          <SpecRow label="Sq Ft" value="168 sq ft" />
+                        </div>
                       </div>
-                      <div className="bg-gray-50 rounded-2xl p-5">
-                        <SpecRow label="Material" value="White Oak" sublabel="Engineered hardwood" />
-                        <SpecRow label="Plank Width" value={`7"`} sublabel="Wide plank style" />
-                        <SpecRow label="Finish" value="Matte" sublabel="Low-sheen protective coating" />
+                      <div>
+                        <p className="text-xs font-medium text-gray-400 uppercase mb-2">Windows</p>
+                        <div className="bg-gray-50 rounded-xl p-4">
+                          <SpecRow label="Type" value="Double-Hung (2)" />
+                          <SpecRow label="Each Opening" value={`36"w × 60"h`} />
+                          <SpecRow label="Blind Rec." value={`35.75"w × 59.75"h`} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bathrooms */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Bathrooms</h3>
+                    <div className="space-y-6">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-3">Master Bathroom</p>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="bg-gray-50 rounded-xl p-4">
+                            <SpecRow label="Dimensions" value={`10' × 12'`} />
+                            <SpecRow label="Fixtures" value="Dual Vanity, Soaking Tub" />
+                            <SpecRow label="Flooring" value="Porcelain Tile 12x24" />
+                          </div>
+                          <div className="bg-gray-50 rounded-xl p-4">
+                            <SpecRow label="Window" value={`24"w × 36"h Frosted`} />
+                            <SpecRow label="Blind Rec." value={`23.75"w × 35.75"h`} />
+                            <SpecRow label="Shower" value="Frameless Glass 48x60" />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-3">Guest Bathroom</p>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="bg-gray-50 rounded-xl p-4">
+                            <SpecRow label="Dimensions" value={`8' × 10'`} />
+                            <SpecRow label="Fixtures" value="Single Vanity, Tub/Shower" />
+                            <SpecRow label="Flooring" value="Porcelain Tile 12x12" />
+                          </div>
+                          <div className="bg-gray-50 rounded-xl p-4">
+                            <SpecRow label="Window" value={`24"w × 30"h Frosted`} />
+                            <SpecRow label="Blind Rec." value={`23.75"w × 29.75"h`} />
+                            <SpecRow label="Shower" value="Tile Surround with Curtain" />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1150,6 +1379,63 @@ export default function HomeBaseManual() {
                 </div>
 
                 <div className="space-y-4">
+                  {/* Voice Assistants */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="font-semibold text-gray-900 mb-4">Voice Assistants & Smart Home Hub</h3>
+                    <div className="space-y-4">
+                      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-5">
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+                            <span className="text-2xl">🔊</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900 mb-1">Google Home Integration</p>
+                            <p className="text-sm text-gray-600">Voice control for lights, thermostats, and more</p>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs">
+                            <div className="w-2 h-2 bg-green-500 rounded-full" />
+                            <span className="text-green-600 font-medium">Connected</span>
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <SpecRow label="Devices" value="5 Google Home speakers" />
+                          <SpecRow label="Locations" value="Kitchen, Living, Master, Office, Garage" />
+                          <SpecRow label="Voice Match" value="4 users registered" />
+                          <SpecRow label="Routines" value="12 active routines" />
+                        </div>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-5">
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+                            <span className="text-2xl">💬</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900 mb-1">Amazon Alexa Integration</p>
+                            <p className="text-sm text-gray-600">Alternative voice control system</p>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs">
+                            <div className="w-2 h-2 bg-green-500 rounded-full" />
+                            <span className="text-green-600 font-medium">Connected</span>
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <SpecRow label="Devices" value="3 Echo devices" />
+                          <SpecRow label="Locations" value="Bedrooms 2, 3, Dining" />
+                          <SpecRow label="Skills Enabled" value="23 skills active" />
+                          <SpecRow label="Smart Groups" value="8 device groups" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span>Source: Smart Home App Configuration</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Security System */}
                   <div className="bg-white rounded-2xl p-6 border border-gray-100">
                     <h3 className="font-semibold text-gray-900 mb-4">Security System</h3>
                     <div className="space-y-3">
@@ -1157,6 +1443,8 @@ export default function HomeBaseManual() {
                       <SpecRow label="Control Panel" value="Kitchen Entrance" />
                       <SpecRow label="Master Code" value="****" sublabel="Contact owner for code" />
                       <SpecRow label="Monitoring" value="24/7 Active" />
+                      <SpecRow label="Sensors" value="12 door/window, 3 motion" />
+                      <SpecRow label="Cameras" value="4 outdoor, 2 indoor" />
                     </div>
                     <div className="mt-4 pt-3 border-t border-gray-100">
                       <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -1166,13 +1454,17 @@ export default function HomeBaseManual() {
                     </div>
                   </div>
 
+                  {/* Smart Thermostat */}
                   <div className="bg-white rounded-2xl p-6 border border-gray-100">
                     <h3 className="font-semibold text-gray-900 mb-4">Smart Thermostat</h3>
                     <div className="space-y-3">
                       <SpecRow label="Brand" value="Nest Learning Thermostat" />
+                      <SpecRow label="Model" value="3rd Generation" />
                       <SpecRow label="Location" value="Hallway, Main Floor" />
                       <SpecRow label="WiFi Connected" value="Yes" />
-                      <SpecRow label="App Control" value="Nest App" />
+                      <SpecRow label="App Control" value="Nest App + Google Home + Alexa" />
+                      <SpecRow label="Auto-Schedule" value="Enabled" />
+                      <SpecRow label="Home/Away Assist" value="Enabled" />
                     </div>
                     <div className="mt-4 pt-3 border-t border-gray-100">
                       <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -1181,11 +1473,243 @@ export default function HomeBaseManual() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Smart Lighting */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="font-semibold text-gray-900 mb-4">Smart Lighting</h3>
+                    <div className="space-y-3">
+                      <SpecRow label="System" value="Philips Hue" />
+                      <SpecRow label="Hub Location" value="Office closet" />
+                      <SpecRow label="Total Bulbs" value="18 color bulbs, 12 white" />
+                      <SpecRow label="Light Switches" value="6 Lutron Caseta dimmers" />
+                      <SpecRow label="Scenes" value="15 custom scenes" />
+                      <SpecRow label="Voice Control" value="Google Home & Alexa enabled" />
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span>Source: Philips Hue App</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             </section>
 
-            {/* CHAPTER 9: EMERGENCY */}
+            {/* CHAPTER 9: DOCUMENTS */}
+            <section id="chapter-documents" className="scroll-mt-24">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex items-center gap-3 mb-8">
+                  <Info className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-900'}`} />
+                  <h2 className={`text-3xl font-light tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Document Management Hub
+                  </h2>
+                </div>
+
+                {/* Document Categories */}
+                <div className="space-y-4">
+                  {/* Purchase & Legal */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4 flex items-center gap-2">
+                      <Info className="w-4 h-4" />
+                      Purchase & Legal Documents
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">📄</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Purchase Agreement</p>
+                            <p className="text-sm text-gray-500">Signed June 15, 2019 · PDF</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">📋</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Title & Deed</p>
+                            <p className="text-sm text-gray-500">Recorded June 28, 2019 · PDF</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">🏠</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Home Inspection Report</p>
+                            <p className="text-sm text-gray-500">May 20, 2019 · 47 pages · PDF</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">💰</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Appraisal Report</p>
+                            <p className="text-sm text-gray-500">May 28, 2019 · PDF</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Warranties & Manuals */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4">
+                      Warranties & Manuals
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">❄️</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Sub-Zero Refrigerator</p>
+                            <p className="text-sm text-gray-500">Warranty expires March 2026 · Manual + Warranty</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">🔥</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Wolf Range & Oven</p>
+                            <p className="text-sm text-gray-500">Warranty expires Jan 2027 · Manual + Warranty</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">💧</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Rheem Water Heater</p>
+                            <p className="text-sm text-gray-500">Warranty expires 2033 · Manual + Warranty</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">🌡️</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">HVAC System</p>
+                            <p className="text-sm text-gray-500">Installation manual + Service records</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Renovation & Permits */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4">
+                      Renovation & Permits
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">🛠️</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Kitchen Remodel (2021)</p>
+                            <p className="text-sm text-gray-500">Permit #2021-0847 · Photos · Invoices</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">🏡</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Roof Replacement (2018)</p>
+                            <p className="text-sm text-gray-500">Permit #2018-1293 · 10-year warranty</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">⚡</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Electrical Panel Upgrade (2015)</p>
+                            <p className="text-sm text-gray-500">Permit #2015-0621 · 200A service</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Insurance & Tax */}
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4">
+                      Insurance & Tax Documents
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">🛡️</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Home Insurance Policy</p>
+                            <p className="text-sm text-gray-500">State Farm · Renews July 2026</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xl">📊</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">Property Tax Records</p>
+                            <p className="text-sm text-gray-500">2019-2025 · Parcel #046-231-18</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </section>
+
+            {/* CHAPTER 10: EMERGENCY */}
             <section id="chapter-emergency" className="scroll-mt-24">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
