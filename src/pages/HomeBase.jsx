@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
-import { 
-  Home, 
-  MessageCircle, 
-  Grid3X3, 
+import { getHomeData, calculateCompletion } from '../lib/homeDataStore';
+import {
+  Home,
+  MessageCircle,
+  Grid3X3,
   AlertTriangle,
   Wifi,
   Key,
@@ -27,7 +28,9 @@ import {
   Palette,
   Refrigerator,
   X,
-  Loader2
+  Loader2,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 
 // Navigation Component
@@ -161,93 +164,144 @@ const QuickInfoCard = ({ icon: Icon, title, primary, secondary, color, delay }) 
 );
 
 // Dashboard View
-const DashboardView = () => (
-  <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-    <div className="px-6 pt-16 pb-8 max-w-4xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-16"
-      >
-        <h1 className="text-5xl font-light text-gray-900 tracking-tight mb-4">
-          Your Complete Home Manual
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Every detail about The Miller Residence in one comprehensive digital manual
-        </p>
-      </motion.div>
+const DashboardView = () => {
+  const homeData = getHomeData();
+  const completion = calculateCompletion(homeData);
+  const hasStartedOnboarding = homeData.onboardingComplete || completion.overall.percentage > 0;
+  const wifiName = homeData.smartHome?.wifi?.networkName;
+  const wifiPass = homeData.smartHome?.wifi?.password;
+  const doorLock = homeData.smartHome?.doorLocks?.[0];
 
-      {/* Hero CTA Card */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
-        className="mb-12"
-      >
-        <Link
-          to={createPageUrl('HomeBaseManual')}
-          className="block bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all hover:scale-105 duration-300"
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="px-6 pt-16 pb-8 max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-16"
         >
-          <div className="flex items-start gap-6 mb-6">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0">
-              <Book className="w-8 h-8 text-white" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-semibold text-white mb-2">Open Full Manual</h2>
-              <p className="text-blue-100 text-sm leading-relaxed">
-                Interactive 3D floor plan, complete room specs, appliance warranties, emergency shutoffs, and all home documentation
-              </p>
-            </div>
-            <ChevronRight className="w-8 h-8 text-white/80" />
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4 text-white/90 text-sm">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-              <p className="font-semibold text-lg">100%</p>
-              <p className="text-xs text-white/70">Complete</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-              <p className="font-semibold text-lg">84</p>
-              <p className="text-xs text-white/70">Data Points</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-              <p className="font-semibold text-lg">3D</p>
-              <p className="text-xs text-white/70">Floor Plan</p>
-            </div>
-          </div>
-        </Link>
-      </motion.div>
+          <h1 className="text-5xl font-light text-gray-900 tracking-tight mb-4">
+            Your Complete Home Manual
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            {homeData.property?.address
+              ? `${homeData.property.address}, ${homeData.property.city || ''}`
+              : 'Every detail about your home in one comprehensive digital manual'}
+          </p>
+        </motion.div>
 
-      {/* Quick Access Cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="mb-8"
-      >
-        <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4 text-center">Quick Access</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <QuickInfoCard
-            icon={Wifi}
-            title="WiFi"
-            primary="Redwood_Mesh"
-            secondary="GiantTrees26!"
-            color="bg-blue-600"
-            delay={0.5}
-          />
-          <QuickInfoCard
-            icon={Key}
-            title="Access"
-            primary="4821#"
-            secondary="Front Door"
-            color="bg-emerald-500"
-            delay={0.6}
-          />
-        </div>
-      </motion.div>
+        {/* Setup CTA — shown when onboarding not complete */}
+        {!homeData.onboardingComplete && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15 }}
+            className="mb-8"
+          >
+            <Link
+              to={createPageUrl('Onboarding')}
+              className="block bg-gradient-to-br from-purple-600 to-indigo-700 rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all hover:scale-[1.02] duration-300"
+            >
+              <div className="flex items-start gap-6 mb-4">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-semibold text-white mb-2">
+                    {hasStartedOnboarding ? 'Continue Home Setup' : 'Set Up Your Home'}
+                  </h2>
+                  <p className="text-purple-100 text-sm leading-relaxed">
+                    {hasStartedOnboarding
+                      ? `You're ${completion.overall.percentage}% complete. Pick up where you left off.`
+                      : 'Guided wizard with AI-powered document import. Takes about 10 minutes.'}
+                  </p>
+                </div>
+                <ArrowRight className="w-8 h-8 text-white/80" />
+              </div>
+              {hasStartedOnboarding && (
+                <div className="w-full bg-white/20 rounded-full h-2">
+                  <div
+                    className="bg-white rounded-full h-2 transition-all duration-700"
+                    style={{ width: `${completion.overall.percentage}%` }}
+                  />
+                </div>
+              )}
+            </Link>
+          </motion.div>
+        )}
+
+        {/* Hero CTA Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="mb-12"
+        >
+          <Link
+            to={createPageUrl('HomeBaseManual')}
+            className="block bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all hover:scale-105 duration-300"
+          >
+            <div className="flex items-start gap-6 mb-6">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0">
+                <Book className="w-8 h-8 text-white" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-semibold text-white mb-2">Open Full Manual</h2>
+                <p className="text-blue-100 text-sm leading-relaxed">
+                  Interactive 3D floor plan, complete room specs, appliance warranties, emergency shutoffs, and all home documentation
+                </p>
+              </div>
+              <ChevronRight className="w-8 h-8 text-white/80" />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 text-white/90 text-sm">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+                <p className="font-semibold text-lg">{completion.overall.percentage}%</p>
+                <p className="text-xs text-white/70">Complete</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+                <p className="font-semibold text-lg">{completion.overall.completed}</p>
+                <p className="text-xs text-white/70">Data Points</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+                <p className="font-semibold text-lg">3D</p>
+                <p className="text-xs text-white/70">Floor Plan</p>
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* Quick Access Cards */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mb-8"
+        >
+          <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4 text-center">Quick Access</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <QuickInfoCard
+              icon={Wifi}
+              title="WiFi"
+              primary={wifiName || "Redwood_Mesh"}
+              secondary={wifiPass || "GiantTrees26!"}
+              color="bg-blue-600"
+              delay={0.5}
+            />
+            <QuickInfoCard
+              icon={Key}
+              title="Access"
+              primary={doorLock?.code || "4821#"}
+              secondary={doorLock?.location || "Front Door"}
+              color="bg-emerald-500"
+              delay={0.6}
+            />
+          </div>
+        </motion.div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // AI Assistant View
 const AssistantView = () => {
