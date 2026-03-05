@@ -499,7 +499,7 @@ ${combinedText.slice(0, 30000)}`
           for (const [key, value] of Object.entries(parsed.property)) {
             if (value) {
               // Documents are authoritative — override lookup/empty values
-              const hadLookupValue = sources.lookup?.includes(key);
+              const hadLookupValue = (data._sources?.lookup || []).includes(key);
               if (!merged.property[key] || hadLookupValue) {
                 merged.property[key] = value;
               }
