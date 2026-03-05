@@ -50,12 +50,14 @@
 import HomeBaseManual from './pages/HomeBaseManual';
 import HomeBase from './pages/HomeBase';
 import Onboarding from './pages/Onboarding';
+import Projects from './pages/Projects';
 
 
 export const PAGES = {
     "HomeBaseManual": HomeBaseManual,
     "HomeBase": HomeBase,
     "Onboarding": Onboarding,
+    "Projects": Projects,
 }
 
 export const pagesConfig = {

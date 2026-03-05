@@ -30,7 +30,8 @@ import {
   X,
   Loader2,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Wrench
 } from 'lucide-react';
 
 // Navigation Component
@@ -38,6 +39,7 @@ const Navigation = ({ activeView, setActiveView, isEmergency }) => {
   const navItems = [
     { id: 'assistant', icon: MessageCircle, label: 'Ask' },
     { id: 'rooms', icon: Grid3X3, label: 'Rooms' },
+    { id: 'projects', icon: Wrench, label: 'Projects', isLink: true, url: 'Projects' },
     { id: 'emergency', icon: AlertTriangle, label: 'Emergency' },
   ];
 
@@ -73,22 +75,37 @@ const Navigation = ({ activeView, setActiveView, isEmergency }) => {
         <div className={`my-4 border-t ${isEmergency ? 'border-slate-700' : 'border-gray-200'}`} />
 
         {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveView(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              activeView === item.id 
-                ? isEmergency 
-                  ? 'bg-red-500/20 text-red-400' 
-                  : 'bg-blue-50 text-blue-600'
-                : isEmergency 
-                  ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' 
+          item.isLink ? (
+            <Link
+              key={item.id}
+              to={createPageUrl(item.url)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                isEmergency
+                  ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                   : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <item.icon className="w-5 h-5" strokeWidth={1.5} />
-            <span className="font-medium text-sm">{item.label}</span>
-          </button>
+              }`}
+            >
+              <item.icon className="w-5 h-5" strokeWidth={1.5} />
+              <span className="font-medium text-sm">{item.label}</span>
+            </Link>
+          ) : (
+            <button
+              key={item.id}
+              onClick={() => setActiveView(item.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                activeView === item.id
+                  ? isEmergency
+                    ? 'bg-red-500/20 text-red-400'
+                    : 'bg-blue-50 text-blue-600'
+                  : isEmergency
+                    ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                    : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <item.icon className="w-5 h-5" strokeWidth={1.5} />
+              <span className="font-medium text-sm">{item.label}</span>
+            </button>
+          )
         ))}
       </div>
     </nav>
