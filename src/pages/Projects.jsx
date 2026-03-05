@@ -863,11 +863,137 @@ export default function Projects() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('urgency');
 
-  // Load from localStorage
+  // Load from localStorage (seed sample data if empty)
   useEffect(() => {
     try {
       const raw = localStorage.getItem('homebase_components');
-      if (raw) setComponents(JSON.parse(raw));
+      if (raw) {
+        setComponents(JSON.parse(raw));
+      } else {
+        const sampleData = [
+          {
+            id: 'sample-1',
+            name: 'GAF Timberline Roof',
+            category: 'roof',
+            subtype: 'asphalt',
+            brand: 'GAF',
+            model: 'Timberline HDZ',
+            installYear: '2018',
+            lifespanYears: 25,
+            location: 'Whole House',
+            warrantyExpiry: '2043',
+            lastServiceDate: '2024',
+            estimatedCost: '18,000',
+            notes: 'Full tear-off and replacement. 25-year manufacturer warranty. Contractor: Bay Roofing Co.',
+          },
+          {
+            id: 'sample-2',
+            name: 'Carrier HVAC System',
+            category: 'hvac',
+            subtype: 'central_ac',
+            brand: 'Carrier',
+            model: '24ACC636A003',
+            installYear: '2014',
+            lifespanYears: 15,
+            location: 'Utility Closet / Garage',
+            warrantyExpiry: '2024',
+            lastServiceDate: '2025',
+            estimatedCost: '9,500',
+            notes: 'Filter size 20x25x1". Service annually in spring. Warranty expired — consider replacement planning.',
+          },
+          {
+            id: 'sample-3',
+            name: 'Rheem Water Heater',
+            category: 'water_heater',
+            subtype: 'tank',
+            brand: 'Rheem',
+            model: 'Performance Platinum XE50T12EH45U0',
+            installYear: '2023',
+            lifespanYears: 10,
+            location: 'Garage',
+            warrantyExpiry: '2033',
+            lastServiceDate: '2023',
+            estimatedCost: '1,800',
+            notes: '50-gallon tank. 10-year warranty on tank, 1-year on parts. Serial: A492194.',
+          },
+          {
+            id: 'sample-4',
+            name: '200A Electrical Panel',
+            category: 'electrical',
+            subtype: 'standard',
+            brand: 'Square D',
+            model: 'QO130L200PG',
+            installYear: '2015',
+            lifespanYears: 40,
+            location: 'Garage',
+            warrantyExpiry: '2025',
+            lastServiceDate: '2022',
+            estimatedCost: '4,500',
+            notes: 'Upgraded from 100A in 2015. 16 circuits. Permit #2015-0621.',
+          },
+          {
+            id: 'sample-5',
+            name: 'Sub-Zero Refrigerator',
+            category: 'appliance',
+            subtype: 'refrigerator',
+            brand: 'Sub-Zero',
+            model: 'BI-42UFD/S/TH',
+            installYear: '2021',
+            lifespanYears: 20,
+            location: 'Kitchen',
+            warrantyExpiry: '2026',
+            lastServiceDate: '2024',
+            estimatedCost: '12,000',
+            notes: 'Built-in integrated. 5-year full warranty. Replace water filter every 12 months (Part #7007067).',
+          },
+          {
+            id: 'sample-6',
+            name: 'Wolf Dual Fuel Range',
+            category: 'appliance',
+            subtype: 'oven',
+            brand: 'Wolf',
+            model: 'DF366',
+            installYear: '2022',
+            lifespanYears: 15,
+            location: 'Kitchen',
+            warrantyExpiry: '2027',
+            lastServiceDate: '',
+            estimatedCost: '8,500',
+            notes: '36" dual fuel, 6 burners. 5-year warranty. Gas + electric.',
+          },
+          {
+            id: 'sample-7',
+            name: 'Milgard Windows',
+            category: 'windows',
+            subtype: 'vinyl',
+            brand: 'Milgard',
+            model: 'Tuscany Series',
+            installYear: '2019',
+            lifespanYears: 25,
+            location: 'Whole House',
+            warrantyExpiry: '',
+            lastServiceDate: '',
+            estimatedCost: '22,000',
+            notes: 'Full house window replacement during kitchen remodel. Casement + double-hung styles. Lifetime limited warranty.',
+          },
+          {
+            id: 'sample-8',
+            name: 'Interior Paint',
+            category: 'paint',
+            subtype: 'interior',
+            brand: 'Benjamin Moore',
+            model: 'Chantilly Lace OC-65',
+            installYear: '2021',
+            lifespanYears: 7,
+            location: 'Whole House',
+            warrantyExpiry: '',
+            lastServiceDate: '',
+            estimatedCost: '6,500',
+            notes: 'Full interior repaint during kitchen remodel. Touch-up paint stored in garage.',
+          },
+        ];
+        setComponents(sampleData);
+      }
     } catch {}
   }, []);
 
