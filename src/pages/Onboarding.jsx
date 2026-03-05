@@ -313,7 +313,7 @@ const RoomsStep = ({ data, onChange }) => {
                       <div className="grid grid-cols-3 gap-3">
                         <Field label="Length" value={room.length} onChange={v => updateRoom(room.id, 'length', v)} placeholder="16" suffix="ft" />
                         <Field label="Width" value={room.width} onChange={v => updateRoom(room.id, 'width', v)} placeholder="18" suffix="ft" />
-                        <Field label="Ceiling" value={room.ceilingHeight} onChange={v => updateRoom(room.id, 'ceilingHeight', v)} placeholder="9'6\"" />
+                        <Field label="Ceiling" value={room.ceilingHeight} onChange={v => updateRoom(room.id, 'ceilingHeight', v)} placeholder={`9'6"`} />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <Field label="Flooring" value={room.flooring} onChange={v => updateRoom(room.id, 'flooring', v)} placeholder="Hardwood oak" />
