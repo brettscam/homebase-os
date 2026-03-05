@@ -446,7 +446,7 @@ Extract ALL structured home data and return it in this exact JSON format. Be tho
     "bedrooms": "", "bathrooms": ""
   },
   "rooms": [
-    { "name": "", "type": "kitchen|living|bedroom|bathroom|dining|office|garage|laundry|other", "length": "", "width": "", "flooring": "", "ceilingHeight": "", "notes": "" }
+    { "name": "", "type": "kitchen|living|bedroom|bathroom|dining|office|garage|laundry|other", "length": "", "width": "", "sqft": "", "flooring": "", "ceilingHeight": "", "level": "main|upper|lower|basement", "notes": "" }
   ],
   "appliances": [
     { "type": "", "brand": "", "model": "", "serialNumber": "", "installDate": "", "room": "", "notes": "" }
@@ -473,11 +473,17 @@ Extract ALL structured home data and return it in this exact JSON format. Be tho
   "notes": "Any other important details found across the documents"
 }
 
+IMPORTANT EXTRACTION TIPS:
+- For appraisals: Look carefully for GLA/Gross Living Area (this is the sqft), room counts, room dimensions, and the sketch/diagram section which describes the floor layout.
+- Extract EVERY room with dimensions you can find (length × width). Appraisals often list rooms in a grid or sketch.
+- For sqft: Look for "GLA", "Gross Living Area", "Living Area", "Total Sq Ft", "Above Grade", or similar fields.
+- For layout: Note which floor/level each room is on (main, upper, lower, basement).
+
 Return ONLY the JSON, no markdown or explanation.
 
 Here are the documents:
 
-${combinedText.slice(0, 12000)}`
+${combinedText.slice(0, 30000)}`
       });
 
       try {
@@ -488,11 +494,15 @@ ${combinedText.slice(0, 12000)}`
         const merged = { ...data };
         merged._sources = { ...(merged._sources || {}), documents: [] };
 
-        // Merge property fields
+        // Merge property fields — document data overrides lookup data
         if (parsed.property) {
           for (const [key, value] of Object.entries(parsed.property)) {
-            if (value && !merged.property[key]) {
-              merged.property[key] = value;
+            if (value) {
+              // Documents are authoritative — override lookup/empty values
+              const hadLookupValue = sources.lookup?.includes(key);
+              if (!merged.property[key] || hadLookupValue) {
+                merged.property[key] = value;
+              }
               merged._sources.documents.push(`property.${key}`);
             }
           }
@@ -522,12 +532,12 @@ ${combinedText.slice(0, 12000)}`
           merged.paint = [...(merged.paint || []), ...newPaint];
         }
 
-        // Merge systems
+        // Merge systems — document data overrides lookup
         if (parsed.systems) {
           for (const section of ['hvac', 'waterHeater', 'electrical', 'plumbing']) {
             if (parsed.systems[section]) {
               for (const [key, value] of Object.entries(parsed.systems[section])) {
-                if (value && merged.systems[section] && !merged.systems[section][key]) {
+                if (value && merged.systems[section]) {
                   merged.systems[section][key] = value;
                   merged._sources.documents.push(`systems.${section}.${key}`);
                 }
