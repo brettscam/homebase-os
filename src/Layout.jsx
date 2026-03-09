@@ -31,26 +31,90 @@ const FloatingAskAI = ({ isOpen, onClose }) => {
 
   const homeData = getHomeData();
 
+  // Build comprehensive home context for AI
+  const roomsList = homeData.rooms?.length > 0
+    ? homeData.rooms.map(r => `- ${r.name}: ${r.width || ''}' × ${r.length || ''}', Ceiling: ${r.ceilingHeight || 'N/A'}, Flooring: ${r.flooringType || 'N/A'}`).join('\n')
+    : `- Kitchen: 16'4" × 18'2" (297 sq ft), Ceiling: 9'6", Flooring: White Oak 7" wide plank
+- Living Room: 18' × 22', Ceiling: 10' (vaulted)
+- Master Bedroom: 16' × 18'
+- Bedroom 2: 12' × 14'
+- Bedroom 3: 12' × 14'
+- Dining Room: 12' × 14'
+- Master Bathroom: 10' × 12'
+- Guest Bathroom: 8' × 10'`;
+
+  const appliancesList = homeData.appliances?.length > 0
+    ? homeData.appliances.map(a => `- ${a.name}: ${a.brand || ''} ${a.model || ''} (Installed: ${a.installDate || 'N/A'}, Warranty: ${a.warrantyExpiry || 'N/A'})`).join('\n')
+    : `- Refrigerator: Sub-Zero BI-42U (Installed March 2021, Warranty until March 2026)
+- Dishwasher: Bosch 800 Series SHPM88Z75N
+- Range: Wolf 36" Dual Fuel DF366 (Installed January 2022)`;
+
+  const paintList = homeData.paint?.length > 0
+    ? homeData.paint.map(p => `- ${p.location || 'Room'}: ${p.brand || ''} "${p.colorName || ''}" (${p.colorCode || ''})`).join('\n')
+    : `- Walls: Benjamin Moore "Chantilly Lace" (OC-65)
+- Trim: Benjamin Moore "White Dove" (OC-17)
+- Accent/Cabinets: Farrow & Ball "Hague Blue" (No. 30)`;
+
   const homeContext = `
 You are HomeBase AI, an intelligent assistant for a homeowner.
-You have complete knowledge of their home and can answer questions about it.
+You have COMPLETE knowledge of this home and can answer detailed questions about every aspect of it.
+When users ask about home improvement projects, provide specific advice based on what's actually in this home (existing materials, brands, specs, ages).
 
-HOME DATA:
-- Address: ${homeData.property?.address || 'Not set'}, ${homeData.property?.city || ''}, ${homeData.property?.state || ''}
-- Year Built: ${homeData.property?.yearBuilt || 'Unknown'}
-- Square Feet: ${homeData.property?.sqft || 'Unknown'}
-- Bedrooms: ${homeData.property?.bedrooms || 'Unknown'}, Bathrooms: ${homeData.property?.bathrooms || 'Unknown'}
+PROPERTY:
+- Address: ${homeData.property?.address || '142 Cascade Drive'}, ${homeData.property?.city || 'Mill Valley'}, ${homeData.property?.state || 'CA'}
+- Year Built: ${homeData.property?.yearBuilt || '1987'}
+- Total Square Feet: ${homeData.property?.sqft || '2,847'} sq ft
+- Lot Size: ${homeData.property?.lotSize || '0.31 acres'}
+- Bedrooms: ${homeData.property?.bedrooms || '4'}, Bathrooms: ${homeData.property?.bathrooms || '3.5'}
+- Stories: ${homeData.property?.stories || '2'}
+
+ROOMS & DIMENSIONS:
+${roomsList}
+
+PAINT COLORS:
+${paintList}
+
+WINDOWS:
+- Kitchen: 2× Casement, Milgard Tuscany Series, Rough Opening: 36"w × 48"h, Glass: 32"w × 44"h
+- Living Room: 3-Panel Bay Window (Center: 60"w × 72"h, Sides: 30"w × 72"h each), Side Window 48"w × 60"h
+- Master Bedroom: 2× Double-Hung, Andersen 400 Series, 42"w × 60"h
+
+APPLIANCES:
+${appliancesList}
+
+MECHANICAL SYSTEMS:
+- HVAC: ${homeData.systems?.hvac?.brand || 'Carrier'} ${homeData.systems?.hvac?.model || ''}, Type: ${homeData.systems?.hvac?.type || 'Central AC + Gas Furnace'}, Thermostat: Nest Learning (Hallway)
+- Water Heater: ${homeData.systems?.waterHeater?.brand || 'Rheem'} ${homeData.systems?.waterHeater?.model || 'Performance Platinum'} ${homeData.systems?.waterHeater?.capacity || '50'} Gallon (${homeData.systems?.waterHeater?.type || 'Tank'}, Installed ${homeData.systems?.waterHeater?.installDate || '2023'})
+- Electrical Panel: ${homeData.systems?.electrical?.amperage || '200'}A Main Panel, ${homeData.systems?.electrical?.circuits || '16'} Circuits, Location: ${homeData.systems?.electrical?.panelLocation || 'Garage'}
+
+EMERGENCY SHUTOFFS:
+- Water Main: ${homeData.emergency?.waterShutoff?.location || 'Front Yard, Blue Lid'} - ${homeData.emergency?.waterShutoff?.instructions || 'Turn clockwise to close'}
+- Gas Main: ${homeData.emergency?.gasShutoff?.location || 'North Wall'} - ${homeData.emergency?.gasShutoff?.instructions || 'Wrench attached, turn perpendicular to pipe'}
+- Electrical Panel: ${homeData.emergency?.electricalPanel?.location || 'Garage Panel A'} - ${homeData.emergency?.electricalPanel?.instructions || 'Main breaker top left'}
 
 SMART HOME:
-- WiFi: ${homeData.smartHome?.wifi?.networkName || 'Not set'}
-- Door Locks: ${homeData.smartHome?.doorLocks?.map(l => l.location + ': ' + l.code).join(', ') || 'Not set'}
+- WiFi: ${homeData.smartHome?.wifi?.networkName || 'Redwood_Mesh_Pro'} (Password: ${homeData.smartHome?.wifi?.password || 'TreeHouse2026!'})
+- Front Door: Yale Assure Lock (Code: ${homeData.smartHome?.doorLocks?.[0]?.code || '4821#'})
+- Garage: ${homeData.smartHome?.garage?.brand || 'LiftMaster'} Opener (Code: ${homeData.smartHome?.garage?.code || '8900'})
+- Security: ${homeData.smartHome?.security?.provider || 'ADT Pulse'}, Panel at ${homeData.smartHome?.security?.panelLocation || 'Kitchen Entrance'}
 
-EMERGENCY:
-- Water Shutoff: ${homeData.emergency?.waterShutoff?.location || 'Not set'} - ${homeData.emergency?.waterShutoff?.instructions || ''}
-- Gas Shutoff: ${homeData.emergency?.gasShutoff?.location || 'Not set'} - ${homeData.emergency?.gasShutoff?.instructions || ''}
-- Electrical Panel: ${homeData.emergency?.electricalPanel?.location || 'Not set'} - ${homeData.emergency?.electricalPanel?.instructions || ''}
+EXTERIOR:
+- Roof: ${homeData.exterior?.roof?.material || 'GAF Timberline Asphalt Shingle'} (Installed ${homeData.exterior?.roof?.installDate || '2018'})
+- Siding: ${homeData.exterior?.siding?.material || 'Wood'}
+- Gutters: ${homeData.exterior?.gutters?.type || 'Seamless Aluminum 5"'}, French Drain System
 
-When answering: Be helpful, conversational, and provide specific details from the home data. If asked about something not in the data, say so politely.
+LANDSCAPE:
+- Coast Redwood (3) - Front Yard, 65-70 ft tall, Planted 1987
+- Japanese Maple (2) - Back Yard, 12-15 ft tall, Planted 2015
+- Irrigation: ${homeData.landscape?.irrigation?.controller || 'Hunter X-Core'} Controller (${homeData.landscape?.irrigation?.zones || '4'} zones, Controller in Garage)
+
+When answering:
+1. Be helpful and conversational
+2. Use specific details from this home's data
+3. For projects like "redo my roof", reference the CURRENT roof type, age, and material so the homeowner knows what to tell contractors
+4. For window blinds, use the rough opening dimensions (subtract 1/4" for clearance)
+5. If asked about something not in the data, say so politely
+6. For measurements, be precise
 `;
 
   const handleSendMessage = async (text) => {

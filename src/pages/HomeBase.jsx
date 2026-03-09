@@ -98,7 +98,7 @@ const SubNav = ({ activeView, setActiveView }) => {
   ];
 
   return (
-    <div className="flex items-center gap-2 px-6 py-3 bg-white border-b border-gray-100">
+    <div className="sticky top-[3.5rem] z-20 flex items-center gap-2 px-6 py-3 bg-white/95 backdrop-blur-xl border-b border-gray-100">
       {items.map((item) => (
         <button
           key={item.id}
