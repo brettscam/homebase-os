@@ -1,23 +1,37 @@
-# PRD: Contacts, Utilities & Admin Pages
+# PRD: Contacts & Accounts + Admin Pages
 
 ## Overview
 
-Three new pages for HomeBase OS that complete the home management experience:
-1. **Contacts** - Unified service provider rolodex (feeds Emergency view)
-2. **Utilities** - Utility account tracking and management
-3. **Admin** - Property management and multi-property settings
+Two new pages for HomeBase OS:
+1. **Contacts & Accounts** - Consolidated page with service providers, utility accounts, and key contacts. Grouped by category with filter/sub-tabs.
+2. **Admin** - Owner-only property management (multi-property, data export, transfer).
+
+### Decisions Made
+- Contacts + Utilities = **one consolidated page** with grouping/sub-tabs
+- Contacts are **shared across properties** (same plumber for all your rentals)
+- Admin page is **owner-only** (not visible to tenants or contractors)
+- Tenant view = future work (stripped-down read-only of key components)
 
 ---
 
-## 1. Contacts Page (Service Provider Rolodex)
+## 1. Contacts & Accounts Page
 
 ### Purpose
-Single source of truth for every contractor, service provider, and emergency contact. The Emergency view on the Home page pulls from this data instead of hardcoded contacts.
+One place for every person you call and every account you pay. Service providers, utility accounts, and key contacts - grouped by category. Emergency view pulls from this data (no more hardcoded contacts).
 
-### Data Model per Contact
+### Page Structure
+
+**Sub-tabs / Filter Groups:**
+- **All** - Everything
+- **Service Providers** - Plumber, electrician, HVAC, handyman, etc.
+- **Utilities** - Electric, gas, water, internet, trash, etc.
+- **Emergency** - Contacts flagged as emergency (shown in Emergency view)
+
+### Data Model: Service Provider
 ```
 {
   id: string,
+  type: 'provider',
   name: string,              // "Mike's Plumbing" or "Mike Rodriguez"
   company: string,           // Company name (if name is a person)
   trade: enum,               // plumber | electrician | hvac | handyman | landscaper | painter | roofer | general_contractor | pest_control | cleaning | locksmith | other
@@ -28,7 +42,7 @@ Single source of truth for every contractor, service provider, and emergency con
   rating: 1-5,               // Personal rating
   isEmergency: boolean,      // Show in Emergency view
   isFavorite: boolean,       // Pin to top
-  notes: string,             // Free text notes
+  notes: string,
   jobs: [                    // Past work history
     {
       id: string,
@@ -38,41 +52,19 @@ Single source of truth for every contractor, service provider, and emergency con
       notes: string,
     }
   ],
+  // Multi-property: shared across all properties by default
+  sharedAcrossProperties: true,
   createdAt: timestamp,
   lastContactedAt: timestamp,
 }
 ```
 
-### UI Layout
-- **Header**: "Service Providers" title + "Add Provider" button
-- **Filter bar**: Filter by trade (dropdown chips), search by name
-- **Card grid**: Each provider shows name, trade badge, phone (tap-to-call), rating stars, last job summary
-- **Detail slide-over**: Full provider detail with job history, total spend, edit/delete
-- **Empty state**: "Add your first provider" CTA with common trade suggestions
-
-### Key Behaviors
-- Emergency view (`HomeBase.jsx`) reads contacts where `isEmergency: true` instead of using hardcoded data
-- Tap phone number = native tel: link
-- Tap email = native mailto: link
-- Job history tracks what they did + what it cost (useful for "how much did we pay last time?")
-- Ask AI can reference contacts: "Who's my plumber?" / "How much did the last plumbing job cost?"
-
-### Navigation
-- Top nav tab: Home | Manual | **Contacts** | Projects | Utilities
-- Or accessible from Emergency view: "Manage Providers" link
-
----
-
-## 2. Utilities Page (Account Tracking)
-
-### Purpose
-Never dig through email for an account number again. All utility providers, account details, and billing info in one place.
-
-### Data Model per Utility Account
+### Data Model: Utility Account
 ```
 {
   id: string,
-  type: enum,                // electric | gas | water_sewer | internet | cable_tv | trash | phone | solar | home_warranty | alarm_monitoring | hoa | other
+  type: 'utility',
+  utilityType: enum,         // electric | gas | water_sewer | internet | cable_tv | trash | phone | solar | home_warranty | alarm_monitoring | hoa | other
   provider: string,          // "PG&E", "Comcast", etc.
   accountNumber: string,
   phone: string,             // Provider support line
@@ -85,72 +77,121 @@ Never dig through email for an account number again. All utility providers, acco
   contractEndDate: string,   // For internet/cable contracts
   notes: string,
   isActive: boolean,
+  // Multi-property: utility accounts are per-property
+  sharedAcrossProperties: false,
 }
 ```
 
-### Utility Type Defaults
-Each type gets an icon and color:
+### Utility Type Icons & Colors
 | Type | Icon | Color |
 |------|------|-------|
-| Electric | Zap | yellow |
-| Gas | Flame | orange |
-| Water/Sewer | Droplets | blue |
-| Internet | Wifi | indigo |
-| Trash | Trash2 | green |
-| Cable/TV | Tv | purple |
-| Phone | Phone | slate |
-| Solar | Sun | amber |
-| Home Warranty | Shield | emerald |
-| Alarm/Monitoring | Bell | red |
-| HOA | Building2 | stone |
+| Electric | Zap | yellow-500 |
+| Gas | Flame | orange-500 |
+| Water/Sewer | Droplets | blue-500 |
+| Internet | Wifi | indigo-500 |
+| Trash | Trash2 | green-600 |
+| Cable/TV | Tv | purple-500 |
+| Phone | Phone | slate-500 |
+| Solar | Sun | amber-500 |
+| Home Warranty | Shield | emerald-500 |
+| Alarm/Monitoring | Bell | red-500 |
+| HOA | Building2 | stone-500 |
+
+### Trade Type Icons & Colors
+| Trade | Icon | Color |
+|-------|------|-------|
+| Plumber | Droplets | blue-600 |
+| Electrician | Zap | yellow-600 |
+| HVAC | Thermometer | cyan-600 |
+| Handyman | Wrench | gray-600 |
+| Landscaper | Trees | green-600 |
+| Painter | Palette | pink-600 |
+| Roofer | Home | slate-600 |
+| General Contractor | HardHat | orange-600 |
+| Pest Control | Bug | red-600 |
+| Cleaning | Sparkles | violet-600 |
+| Locksmith | Key | amber-600 |
 
 ### UI Layout
-- **Header**: "Utilities & Accounts" title + "Add Account" button
-- **Monthly summary card**: Total estimated monthly cost across all utilities
-- **Account cards**: Grid of cards, each showing provider logo/icon, account type badge, account number (masked by default, tap to reveal), monthly cost, auto-pay badge
-- **Detail view**: Full account details, copy-to-clipboard for account numbers, direct link to provider website
-- **Empty state**: Common utility type suggestions based on property location
+
+**Top section:**
+- Page title: "Contacts & Accounts"
+- "Add" button (dropdown: Add Provider | Add Utility Account)
+- Search bar
+- Sub-tab filter: All | Providers | Utilities | Emergency
+
+**Summary bar (when Utilities tab active):**
+- Total estimated monthly cost across all active utilities
+- Number of accounts with autopay vs manual pay
+- Contract renewals coming up (within 60 days)
+
+**Card grid:**
+- **Provider cards**: Name, trade badge (colored), phone (tap-to-call), star rating, last job + cost, emergency badge if flagged
+- **Utility cards**: Provider name, utility type icon + badge, account number (masked `****4567`, tap to reveal), monthly cost, autopay status, copy button
+
+**Detail slide-over (click a card):**
+- Full contact/account details
+- For providers: job history timeline, total spend, edit/delete
+- For utilities: full account details, copy-to-clipboard, direct link to provider website, contract end date
+- Edit / Delete buttons
+
+**Empty state:**
+- "Add your first contact" with quick-add suggestions:
+  - Providers: "Plumber, Electrician, HVAC Tech, Handyman"
+  - Utilities: "Electric, Gas, Water, Internet, Trash"
 
 ### Key Behaviors
-- Account numbers masked by default (`****4567`), tap/click to reveal
-- Copy button for account numbers and login emails
-- Quick-call button for provider support lines
-- Monthly cost total shown at top
-- Contract end dates highlighted when within 60 days (for negotiation timing)
-- Ask AI integration: "What's my PG&E account number?" / "How much do I pay for internet?"
+- Emergency view (`HomeBase.jsx`) reads contacts where `isEmergency: true`
+- Phone numbers = native `tel:` links
+- Email = native `mailto:` links
+- Account numbers masked by default, tap to reveal
+- Copy buttons for account numbers, emails, phone numbers
+- Contract end dates highlighted amber when within 60 days
+- Providers shared across properties; utility accounts are per-property
+- Ask AI knows all contacts + accounts:
+  - "Who's my plumber?"
+  - "What's my PG&E account number?"
+  - "How much do I spend on utilities per month?"
+  - "My water bill seems high, where's the shutoff?" (cross-references)
 
 ---
 
-## 3. Admin Page (Property Management)
+## 2. Admin Page (Owner Only)
 
 ### Purpose
-Property management hub for multi-property support. Designed for the property manager SKU but useful for single-property owners too.
+Property management hub. Owner-only access. Manages multi-property switching, data, and (future) user access.
+
+### Visibility
+- **Owner**: Full access
+- **Property Manager**: Can see Properties and Data tabs, not People management
+- **Tenant**: Cannot see Admin page at all
+- **Contractor**: Cannot see Admin page at all
 
 ### Sections
 
-#### 3a. Properties
-- List all properties with address, photo, status badge (active/vacant/maintenance)
-- Add new property (address, name, type: primary_residence | rental | vacation | commercial)
-- Switch active property (updates all other pages)
-- Property transfer: generate a shareable link to transfer home data to new owner
-- Delete property (with confirmation)
+#### 2a. Properties
+- List all properties with address, status badge (active | vacant | maintenance)
+- **Add property**: Address, name, type (primary_residence | rental | vacation | commercial)
+- **Switch active property**: Updates all other pages to show that property's data
+- **Property status**: Toggle between active/vacant/maintenance
+- **Delete property**: With confirmation dialog
 
-#### 3b. People & Access
-- Invite users to a property (email invite)
-- Role management:
-  - **Owner**: Full access, can manage other users
-  - **Property Manager**: Full access except billing/subscription
-  - **Tenant**: View-only access to manual, emergency info, contacts. Cannot see financial data (costs, property values)
-  - **Contractor**: Temporary access to specific sections (e.g., "share floor plan with contractor")
-- View who has access to each property
+#### 2b. People & Access (future-ready)
+- Placeholder UI showing who has access to each property
+- Invite button (disabled with "Coming soon" tooltip)
+- Role badges: Owner, Manager, Tenant, Contractor
+- Note: Full invite/role management is a future feature tied to auth
 
-#### 3c. Data Management
-- **Import**: Upload documents for AI extraction (link to Onboarding)
-- **Export**: Download all property data as JSON or PDF report
-- **Transfer**: Generate a transfer package for property sale (buyer gets all home data)
+#### 2c. Data Management
+- **Export**: Download all property data as JSON
+- **Transfer**: Generate a transfer package for property sale
+  - Buyer gets: manual data, contacts, utility accounts, project history
+  - Buyer does NOT get: financial data, personal notes (configurable)
+- **Import**: Link to Onboarding for document upload + AI extraction
+- **Clear Data**: Reset property data (with double-confirmation)
 
-#### 3d. Notifications (future-ready)
-- Placeholder toggles for:
+#### 2d. Notifications (placeholder)
+- Toggle switches (disabled, "Coming soon"):
   - Maintenance reminders
   - Warranty expiration alerts
   - Contract renewal reminders
@@ -158,6 +199,7 @@ Property management hub for multi-property support. Designed for the property ma
 
 ### Data Model
 ```
+// Stored separately: localStorage key = 'homebase_admin'
 {
   properties: [
     {
@@ -166,81 +208,77 @@ Property management hub for multi-property support. Designed for the property ma
       type: enum,             // primary_residence | rental | vacation | commercial
       status: enum,           // active | vacant | maintenance
       address: string,
-      dataStoreKey: string,   // localStorage key for this property's data
+      dataStoreKey: string,   // localStorage key for this property's home data
       createdAt: timestamp,
     }
   ],
   activePropertyId: string,
-  users: [
-    {
-      id: string,
-      email: string,
-      name: string,
-      role: enum,             // owner | manager | tenant | contractor
-      propertyIds: string[],  // Which properties they can access
-      invitedAt: timestamp,
-    }
-  ],
+  // Contacts stored here (shared across properties)
+  contacts: [],              // Service providers (shared)
 }
 ```
 
 ### UI Layout
+- Accessed via gear icon in Layout header (not a main nav tab)
 - **Tabbed sections**: Properties | People | Data
-- **Properties tab**: Property cards with switch/add/edit
-- **People tab**: User list with role badges, invite button
-- **Data tab**: Import/Export/Transfer buttons with file size estimates
+- **Properties tab**: Property cards in a grid, add button, status toggles
+- **People tab**: Placeholder user list with "Coming soon" invite
+- **Data tab**: Export/Transfer/Import/Clear buttons with descriptions
 
 ---
 
 ## Navigation Updates
 
-Current nav: `Home | Manual | Projects`
+**Current nav:** `Home | Manual | Projects`
 
-Proposed nav: `Home | Manual | Contacts | Projects | Utilities`
+**New nav:** `Home | Manual | Contacts | Projects`
 
-Admin/Settings accessible via a gear icon or user avatar in the top-right of the Layout header (not a main nav tab - it's not a daily-use page).
+- "Contacts" = the consolidated Contacts & Accounts page
+- Admin = gear icon in top-right header area (next to Ask AI button)
+- "Contacts" replaces having separate Contacts + Utilities tabs (consolidated)
 
 ---
 
 ## Data Store Changes
 
-Add to `homeDataStore.js`:
+### homeDataStore.js additions
 ```js
-contacts: [],           // Service provider rolodex
-utilities: [],          // Utility accounts
+// Add to defaultData:
+contacts: [],              // Service providers (type: 'provider')
+utilities: [],             // Utility accounts (type: 'utility')
 ```
 
-New separate store for admin/multi-property:
+### New admin store
 ```js
-// homebase_admin (separate localStorage key)
+// Separate localStorage key: 'homebase_admin'
+// Manages multi-property + shared contacts
 {
   properties: [],
-  activePropertyId: string,
-  users: [],
+  activePropertyId: null,
+  sharedContacts: [],      // Providers shared across properties
 }
 ```
 
 ---
 
-## Ask AI Integration
+## Ask AI Context Updates
 
-The floating Ask AI panel context should be extended to include:
-- Contact data: "Who's my plumber?" / "What's the electrician's number?"
-- Utility data: "What's my internet account number?" / "How much do I spend on utilities monthly?"
-- Cross-referencing: "My water bill seems high, where's the shutoff?" (combines utilities + emergency)
+Extend the floating Ask AI panel to include:
+```
+SERVICE PROVIDERS:
+- [trade]: [name], [phone], Last job: [description] ([cost], [date])
 
----
-
-## Priority Order
-
-1. **Contacts** - Highest impact, replaces hardcoded emergency data, daily utility
-2. **Utilities** - High value, everyone scrambles for account numbers
-3. **Admin** - Foundation for multi-property SKU, can start simple
+UTILITY ACCOUNTS:
+- [type]: [provider], Account: [number], ~$[cost]/mo, Autopay: [yes/no]
+```
 
 ---
 
-## Open Questions
+## Build Order
 
-1. Should Contacts and Utilities be combined into one "Accounts" page with tabs, or stay as separate nav items?
-2. For the property manager SKU: should each property have completely separate data stores, or share contacts across properties (e.g., same plumber for multiple rental units)?
-3. Should the Admin page be visible to all users or only to Owner/Manager roles?
+1. **Contacts & Accounts page** - New page with both provider + utility CRUD
+2. **Wire Emergency view** - Replace hardcoded contacts with live data
+3. **Update Ask AI context** - Add contacts + utilities to AI prompt
+4. **Update nav** - Add Contacts tab + Admin gear icon to Layout
+5. **Admin page** - Properties list, data export, placeholder people/notifications
+6. **Data store updates** - Add contacts/utilities to homeDataStore, create admin store
