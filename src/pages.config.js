@@ -51,6 +51,7 @@ import HomeBaseManual from './pages/HomeBaseManual';
 import HomeBase from './pages/HomeBase';
 import Onboarding from './pages/Onboarding';
 import Projects from './pages/Projects';
+import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
@@ -63,4 +64,5 @@ export const PAGES = {
 export const pagesConfig = {
     mainPage: "HomeBase",
     Pages: PAGES,
+    Layout: __Layout,
 };

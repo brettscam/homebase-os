@@ -34,84 +34,6 @@ import {
   Wrench
 } from 'lucide-react';
 
-// Navigation Component
-const Navigation = ({ activeView, setActiveView, isEmergency }) => {
-  const navItems = [
-    { id: 'assistant', icon: MessageCircle, label: 'Ask' },
-    { id: 'rooms', icon: Grid3X3, label: 'Rooms' },
-    { id: 'projects', icon: Wrench, label: 'Projects', isLink: true, url: 'Projects' },
-    { id: 'emergency', icon: AlertTriangle, label: 'Emergency' },
-  ];
-
-  return (
-    <nav className={`fixed left-0 top-0 bottom-0 w-64 ${isEmergency ? 'bg-slate-900 border-slate-700' : 'bg-white/95 backdrop-blur-xl border-gray-100'} border-r z-50 flex flex-col`}>
-      <div className="p-6 border-b border-gray-100">
-        <h1 className={`text-xl font-light tracking-tight mb-1 ${isEmergency ? 'text-white' : 'text-gray-900'}`}>
-          HOMEBASE
-        </h1>
-        <p className={`text-xs ${isEmergency ? 'text-slate-400' : 'text-gray-500'}`}>
-          Quick Access
-        </p>
-      </div>
-
-      <div className="flex-1 p-4 space-y-2">
-        {/* Link to Full Manual */}
-        <Link
-          to={createPageUrl('HomeBaseManual')}
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-            isEmergency 
-              ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-              : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg'
-          }`}
-        >
-          <Book className="w-5 h-5" strokeWidth={1.5} />
-          <div className="flex-1">
-            <span className="font-semibold text-sm block">Full Manual</span>
-            <span className="text-xs opacity-90">3D Model & Complete Docs</span>
-          </div>
-          <ChevronRight className="w-4 h-4" />
-        </Link>
-
-        <div className={`my-4 border-t ${isEmergency ? 'border-slate-700' : 'border-gray-200'}`} />
-
-        {navItems.map((item) => (
-          item.isLink ? (
-            <Link
-              key={item.id}
-              to={createPageUrl(item.url)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                isEmergency
-                  ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <item.icon className="w-5 h-5" strokeWidth={1.5} />
-              <span className="font-medium text-sm">{item.label}</span>
-            </Link>
-          ) : (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                activeView === item.id
-                  ? isEmergency
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-blue-50 text-blue-600'
-                  : isEmergency
-                    ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                    : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <item.icon className="w-5 h-5" strokeWidth={1.5} />
-              <span className="font-medium text-sm">{item.label}</span>
-            </button>
-          )
-        ))}
-      </div>
-    </nav>
-  );
-};
-
 // Health Score Ring Component
 const HealthScoreRing = ({ score }) => {
   const [animatedScore, setAnimatedScore] = useState(0);
@@ -126,30 +48,17 @@ const HealthScoreRing = ({ score }) => {
   return (
     <div className="relative w-52 h-52 mx-auto">
       <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
-        <circle
-          cx="100"
-          cy="100"
-          r="88"
-          fill="none"
-          stroke="#E5E7EB"
-          strokeWidth="8"
-        />
+        <circle cx="100" cy="100" r="88" fill="none" stroke="#E5E7EB" strokeWidth="8" />
         <motion.circle
-          cx="100"
-          cy="100"
-          r="88"
-          fill="none"
-          stroke="#2563EB"
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
+          cx="100" cy="100" r="88" fill="none" stroke="#2563EB" strokeWidth="8"
+          strokeLinecap="round" strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
           transition={{ duration: 1.5, ease: "easeOut" }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span 
+        <motion.span
           className="text-5xl font-light text-gray-900 tracking-tight"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -180,6 +89,36 @@ const QuickInfoCard = ({ icon: Icon, title, primary, secondary, color, delay }) 
   </motion.div>
 );
 
+// Sub-nav for HomeBase internal views
+const SubNav = ({ activeView, setActiveView }) => {
+  const items = [
+    { id: 'home', icon: Home, label: 'Dashboard' },
+    { id: 'rooms', icon: Grid3X3, label: 'Rooms' },
+    { id: 'emergency', icon: AlertTriangle, label: 'Emergency' },
+  ];
+
+  return (
+    <div className="flex items-center gap-2 px-6 py-3 bg-white border-b border-gray-100">
+      {items.map((item) => (
+        <button
+          key={item.id}
+          onClick={() => setActiveView(item.id)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeView === item.id
+              ? item.id === 'emergency'
+                ? 'bg-red-50 text-red-600'
+                : 'bg-blue-50 text-blue-600'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          <item.icon className="w-4 h-4" strokeWidth={1.5} />
+          <span>{item.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
 // Dashboard View
 const DashboardView = () => {
   const homeData = getHomeData();
@@ -191,13 +130,13 @@ const DashboardView = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="px-6 pt-16 pb-8 max-w-4xl mx-auto">
+      <div className="px-6 pt-10 pb-8 max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-16"
+          className="text-center mb-12"
         >
-          <h1 className="text-5xl font-light text-gray-900 tracking-tight mb-4">
+          <h1 className="text-4xl font-light text-gray-900 tracking-tight mb-3">
             Your Complete Home Manual
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -207,7 +146,7 @@ const DashboardView = () => {
           </p>
         </motion.div>
 
-        {/* Setup CTA — shown when onboarding not complete */}
+        {/* Setup CTA */}
         {!homeData.onboardingComplete && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -265,7 +204,7 @@ const DashboardView = () => {
               <div className="flex-1">
                 <h2 className="text-2xl font-semibold text-white mb-2">Open Full Manual</h2>
                 <p className="text-blue-100 text-sm leading-relaxed">
-                  Interactive 3D floor plan, complete room specs, appliance warranties, emergency shutoffs, and all home documentation
+                  Interactive property map, complete room specs, appliance warranties, emergency shutoffs, and all home documentation
                 </p>
               </div>
               <ChevronRight className="w-8 h-8 text-white/80" />
@@ -281,8 +220,8 @@ const DashboardView = () => {
                 <p className="text-xs text-white/70">Data Points</p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-                <p className="font-semibold text-lg">3D</p>
-                <p className="text-xs text-white/70">Floor Plan</p>
+                <p className="font-semibold text-lg">Map</p>
+                <p className="text-xs text-white/70">Property View</p>
               </div>
             </div>
           </Link>
@@ -320,217 +259,10 @@ const DashboardView = () => {
   );
 };
 
-// AI Assistant View
-const AssistantView = () => {
-  const [messages, setMessages] = useState([]);
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const homeContext = `
-You are HomeBase AI, an intelligent assistant for The Miller Residence in Mill Valley, CA. 
-You have complete knowledge of this home and can answer questions about it.
-
-HOME SPECIFICATIONS:
-- Year Built: 1987
-- Total Square Feet: 2,847 sq ft
-- Lot Size: 0.31 acres
-- Bedrooms: 4, Bathrooms: 3.5
-- Stories: 2
-
-ROOMS & DIMENSIONS:
-- Kitchen: 16'4" × 18'2" (297 sq ft), Ceiling: 9'6", Windows: 2 casement (Milgard Tuscany), Flooring: White Oak 7" wide plank
-- Living Room: 18' × 22'
-- Master Bedroom: 16' × 18'
-- Bedroom 2: 12' × 14'
-- Bedroom 3: 12' × 14'
-- Bathroom: 8' × 10'
-- Dining Room: 12' × 14'
-
-PAINT COLORS:
-- Walls: Benjamin Moore "Chantilly Lace" (OC-65)
-- Trim: Benjamin Moore "White Dove" (OC-17)
-- Accent/Cabinets: Farrow & Ball "Hague Blue" (No. 30)
-
-WINDOWS:
-Kitchen Windows: 2× Casement, Milgard Tuscany Series
-- Rough Opening: 36"w × 48"h
-- Daylight Opening: 32"w × 44"h
-
-APPLIANCES:
-- Refrigerator: Sub-Zero BI-42U (Installed March 2021, Warranty until March 2026)
-- Dishwasher: Bosch 800 Series SHPM88Z75N
-- Range: Wolf 36" Dual Fuel DF366 (Installed January 2022)
-
-MECHANICAL SYSTEMS:
-- Water Heater: Rheem Performance Platinum 50 Gallon (2023)
-- HVAC: Nest Learning Thermostat (Hallway, Main Floor)
-- Electrical Panel: 200A Main Panel, 16 Circuit Breakers, Located in Garage
-
-EMERGENCY SHUTOFFS:
-- Water Main: Front Yard, Blue Lid, Turn clockwise to close
-- Gas Main: North Wall, Wrench attached, Turn perpendicular to pipe
-- Electrical Panel: Garage Panel A, Main breaker top left
-
-SMART HOME:
-- WiFi: Redwood_Mesh_Pro (Password: TreeHouse2026!)
-- Front Door: Yale Assure Lock (Code: 4821#)
-- Garage: LiftMaster Opener (Code: 8900)
-- Security: ADT Pulse, Control Panel at Kitchen Entrance
-
-EXTERIOR:
-- Roof: GAF Timberline Asphalt Shingle (Installed 2018)
-- Gutters: Seamless Aluminum 5", French Drain System
-- Irrigation: Hunter X-Core Controller (4 zones, Controller in Garage)
-
-LANDSCAPE:
-- Coast Redwood (3) - Front Yard, 65-70 ft tall, Planted 1987
-- Japanese Maple (2) - Back Yard, 12-15 ft tall, Planted 2015
-
-When answering questions:
-1. Be helpful and conversational
-2. For window blind measurements, use the rough opening dimensions (subtract 1/4" for clearance)
-3. Provide specific details from the home data
-4. If asked about something not in the data, say so politely
-5. For measurements, be precise and include both imperial and metric when helpful
-`;
-
-  const handleSendMessage = async (text) => {
-    const question = text || inputValue;
-    if (!question.trim() || isLoading) return;
-
-    const userMessage = { role: 'user', content: question };
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-    setIsLoading(true);
-
-    try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `${homeContext}\n\nUser Question: ${question}\n\nProvide a helpful, accurate answer based on the home data above.`,
-      });
-
-      const assistantMessage = { role: 'assistant', content: response };
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      const errorMessage = { 
-        role: 'assistant', 
-        content: 'Sorry, I encountered an error. Please try again.' 
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const suggestedQuestions = [
-    'Where is the water shutoff?',
-    'What paint is on the walls?',
-    'What size blinds do I need for the kitchen windows?',
-    'When was the roof replaced?'
-  ];
-
-  return (
-    <div className="min-h-screen bg-[#F9F9F9]">
-      <div className="px-6 pt-8 pb-24">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <p className="text-sm font-medium text-gray-400 tracking-widest uppercase mb-2">AI Assistant</p>
-          <h1 className="text-3xl font-light text-gray-900 tracking-tight">Ask HomeBase</h1>
-        </motion.div>
-
-        {messages.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-12"
-          >
-            <div className="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
-              <MessageCircle className="w-10 h-10 text-blue-600" />
-            </div>
-            <p className="text-gray-500 text-center mb-8">
-              Ask me anything about your home
-            </p>
-            
-            <div className="space-y-3 w-full max-w-lg">
-              <p className="text-xs font-medium text-gray-400 tracking-widest uppercase text-center mb-4">Suggested Questions</p>
-              {suggestedQuestions.map((q, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSendMessage(q)}
-                  className="w-full text-left px-5 py-4 bg-white rounded-2xl text-gray-700 hover:bg-gray-50 transition-colors border border-gray-100"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        ) : (
-          <div className="space-y-6 max-w-2xl">
-            {messages.map((message, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white rounded-3xl rounded-br-lg'
-                    : 'bg-white text-gray-800 rounded-3xl rounded-bl-lg shadow-sm border border-gray-100'
-                } px-5 py-3 max-w-[85%]`}>
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                </div>
-              </motion.div>
-            ))}
-            
-            {isLoading && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex justify-start"
-              >
-                <div className="bg-white px-5 py-3 rounded-3xl rounded-bl-lg shadow-sm border border-gray-100">
-                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                </div>
-              </motion.div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Fixed Input Bar */}
-      <div className="fixed bottom-0 left-64 right-0 bg-white border-t border-gray-100 p-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-gray-50 rounded-full flex items-center p-2 border border-gray-200">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Ask about your home..."
-              className="flex-1 px-4 py-2 bg-transparent outline-none text-gray-700"
-              disabled={isLoading}
-            />
-            <button
-              onClick={() => handleSendMessage()}
-              disabled={isLoading || !inputValue.trim()}
-              className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
-            >
-              <Send className="w-4 h-4 text-white" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Room Detail View
 const RoomDetailView = () => (
   <div className="min-h-screen bg-[#F9F9F9]">
-    <div className="px-6 pt-8">
+    <div className="px-6 pt-8 max-w-4xl mx-auto">
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -576,7 +308,7 @@ const RoomDetailView = () => (
             </div>
             <div>
               <p className="text-sm text-gray-400 mb-1">Dimensions</p>
-              <p className="text-xl font-semibold text-gray-900">14' × 18'</p>
+              <p className="text-xl font-semibold text-gray-900">14' x 18'</p>
             </div>
             <div>
               <p className="text-sm text-gray-400 mb-1">Square Footage</p>
@@ -686,7 +418,7 @@ const EmergencyView = () => {
 
   return (
     <div className="min-h-screen bg-slate-900">
-      <div className="px-6 pt-8">
+      <div className="px-6 pt-8 max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -733,7 +465,7 @@ const EmergencyView = () => {
               </div>
               <button className="w-full mt-4 flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl transition-colors">
                 <MapPin className="w-4 h-4" />
-                <span className="text-sm font-medium">Show Location</span>
+                <span className="text-sm font-medium">Show on Property Map</span>
               </button>
             </motion.div>
           ))}
@@ -744,7 +476,7 @@ const EmergencyView = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="mt-8"
+          className="mt-8 pb-8"
         >
           <h2 className="text-xs font-medium text-slate-500 tracking-widest uppercase mb-4">Emergency Contacts</h2>
           <div className="space-y-3">
@@ -777,14 +509,11 @@ const EmergencyView = () => {
 // Main App Component
 export default function HomeBase() {
   const [activeView, setActiveView] = useState('home');
-  const isEmergency = activeView === 'emergency';
 
   const renderView = () => {
     switch (activeView) {
       case 'home':
         return <DashboardView />;
-      case 'assistant':
-        return <AssistantView />;
       case 'rooms':
         return <RoomDetailView />;
       case 'emergency':
@@ -795,21 +524,19 @@ export default function HomeBase() {
   };
 
   return (
-    <div className={`min-h-screen ${isEmergency ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}>
-      <Navigation activeView={activeView} setActiveView={setActiveView} isEmergency={isEmergency} />
-      <div className="ml-64">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeView}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            {renderView()}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+    <div className="min-h-screen bg-[#F9F9F9]">
+      <SubNav activeView={activeView} setActiveView={setActiveView} />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeView}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {renderView()}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
