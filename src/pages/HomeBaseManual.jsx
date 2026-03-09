@@ -213,7 +213,7 @@ export default function HomeBaseManual() {
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}>
       {/* Chapter Navigation Strip */}
-      <div className={`sticky top-0 z-30 ${darkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-gray-100'} backdrop-blur-xl border-b`}>
+      <div className={`sticky top-[3.5rem] z-30 ${darkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-gray-100'} backdrop-blur-xl border-b`}>
         <div className="flex items-center gap-2 px-4 py-2">
           {/* Completion Badge */}
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg mr-2 ${darkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
