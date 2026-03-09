@@ -20,7 +20,9 @@ import {
   MapPin,
   Building2,
   Plus,
-  Check
+  Check,
+  Users,
+  Settings
 } from 'lucide-react';
 
 // Floating Ask AI Panel
@@ -107,6 +109,16 @@ LANDSCAPE:
 - Coast Redwood (3) - Front Yard, 65-70 ft tall, Planted 1987
 - Japanese Maple (2) - Back Yard, 12-15 ft tall, Planted 2015
 - Irrigation: ${homeData.landscape?.irrigation?.controller || 'Hunter X-Core'} Controller (${homeData.landscape?.irrigation?.zones || '4'} zones, Controller in Garage)
+
+SERVICE PROVIDERS:
+${homeData.contacts?.length > 0
+  ? homeData.contacts.map(c => `- ${c.trade || 'Provider'}: ${c.name}${c.company ? ` (${c.company})` : ''}, Phone: ${c.phone || 'N/A'}${c.jobs?.length > 0 ? `, Last job: ${c.jobs[c.jobs.length - 1].description} ($${c.jobs[c.jobs.length - 1].cost || '?'}, ${c.jobs[c.jobs.length - 1].date || '?'})` : ''}`).join('\n')
+  : '- No service providers added yet'}
+
+UTILITY ACCOUNTS:
+${homeData.utilities?.length > 0
+  ? homeData.utilities.map(u => `- ${u.utilityType || 'Utility'}: ${u.provider}, Account: ${u.accountNumber || 'N/A'}, ~$${u.avgMonthlyCost || '?'}/mo, Autopay: ${u.autopay ? 'Yes' : 'No'}`).join('\n')
+  : '- No utility accounts added yet'}
 
 When answering:
 1. Be helpful and conversational
@@ -337,6 +349,7 @@ export default function Layout({ children, currentPageName }) {
   const navItems = [
     { id: 'HomeBase', icon: Home, label: 'Home' },
     { id: 'HomeBaseManual', icon: Book, label: 'Manual' },
+    { id: 'ContactsAccounts', icon: Users, label: 'Contacts' },
     { id: 'Projects', icon: Wrench, label: 'Projects' },
   ];
 
@@ -382,6 +395,17 @@ export default function Layout({ children, currentPageName }) {
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
               <span className="hidden sm:inline">Ask AI</span>
             </button>
+            <Link
+              to={createPageUrl('Admin')}
+              className={`p-2 rounded-xl transition-all ${
+                pathName === 'Admin'
+                  ? 'bg-gray-200 text-gray-900'
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
+              title="Admin"
+            >
+              <Settings className="w-5 h-5" strokeWidth={1.5} />
+            </Link>
           </div>
         </div>
       </header>

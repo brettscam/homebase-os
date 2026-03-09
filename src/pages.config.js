@@ -51,6 +51,8 @@ import HomeBaseManual from './pages/HomeBaseManual';
 import HomeBase from './pages/HomeBase';
 import Onboarding from './pages/Onboarding';
 import Projects from './pages/Projects';
+import ContactsAccounts from './pages/ContactsAccounts';
+import Admin from './pages/Admin';
 import __Layout from './Layout.jsx';
 
 
@@ -59,6 +61,8 @@ export const PAGES = {
     "HomeBase": HomeBase,
     "Onboarding": Onboarding,
     "Projects": Projects,
+    "ContactsAccounts": ContactsAccounts,
+    "Admin": Admin,
 }
 
 export const pagesConfig = {

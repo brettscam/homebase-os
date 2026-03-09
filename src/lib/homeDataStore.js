@@ -44,9 +44,34 @@ const defaultData = {
     irrigation: { controller: '', zones: '' },
   },
   documents: [],
+  contacts: [],
+  utilities: [],
   onboardingComplete: false,
   lastUpdated: null,
 };
+
+const ADMIN_STORAGE_KEY = 'homebase_admin';
+
+const defaultAdminData = {
+  properties: [],
+  activePropertyId: null,
+  sharedContacts: [],
+};
+
+export function getAdminData() {
+  try {
+    const raw = localStorage.getItem(ADMIN_STORAGE_KEY);
+    if (!raw) return { ...structuredClone(defaultAdminData) };
+    return { ...structuredClone(defaultAdminData), ...JSON.parse(raw) };
+  } catch {
+    return { ...structuredClone(defaultAdminData) };
+  }
+}
+
+export function saveAdminData(data) {
+  localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(data));
+  return data;
+}
 
 export function getHomeData() {
   try {
