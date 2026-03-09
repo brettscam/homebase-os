@@ -1,643 +1,414 @@
-import React, { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ZoomIn, 
-  ZoomOut, 
-  RotateCcw, 
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
   Info,
-  Maximize2,
   Eye,
-  Move,
-  X
+  X,
+  Droplets,
+  Flame,
+  Zap,
+  Thermometer,
+  Home,
+  Trees,
+  Car,
+  ChevronRight
 } from 'lucide-react';
 
+// Emergency marker definitions
+const EMERGENCY_MARKERS = [
+  {
+    id: 'water_shutoff',
+    label: 'Water Main Shutoff',
+    icon: Droplets,
+    color: 'bg-blue-500',
+    ringColor: 'ring-blue-400',
+    position: { top: '78%', left: '28%' },
+    location: 'Front Yard',
+    detail: 'Blue Lid · Turn Clockwise to Close',
+    pulse: true,
+  },
+  {
+    id: 'gas_shutoff',
+    label: 'Gas Shutoff',
+    icon: Flame,
+    color: 'bg-orange-500',
+    ringColor: 'ring-orange-400',
+    position: { top: '42%', left: '12%' },
+    location: 'North Wall (Left Side)',
+    detail: 'Wrench Attached · Turn Perpendicular to Pipe',
+    pulse: true,
+  },
+  {
+    id: 'electrical_panel',
+    label: 'Electrical Panel',
+    icon: Zap,
+    color: 'bg-yellow-500',
+    ringColor: 'ring-yellow-400',
+    position: { top: '55%', left: '82%' },
+    location: 'Garage',
+    detail: '200A Main Panel · Main Breaker Top Left',
+    pulse: true,
+  },
+  {
+    id: 'water_heater',
+    label: 'Water Heater',
+    icon: Thermometer,
+    color: 'bg-cyan-500',
+    ringColor: 'ring-cyan-400',
+    position: { top: '60%', left: '75%' },
+    location: 'Garage',
+    detail: 'Rheem Performance Platinum 50 Gal (2023)',
+    pulse: false,
+  },
+];
+
+// Room data for the flat floor plan
+const ROOMS = [
+  { id: 'living', name: 'Living Room', dims: "18' × 22'", x: 5, y: 18, w: 30, h: 28, color: '#EEF2FF' },
+  { id: 'kitchen', name: 'Kitchen', dims: "16'4\" × 18'2\"", x: 35, y: 18, w: 25, h: 22, color: '#F0FDF4' },
+  { id: 'dining', name: 'Dining', dims: "12' × 14'", x: 35, y: 40, w: 18, h: 16, color: '#FFF7ED' },
+  { id: 'master', name: 'Master Bed', dims: "16' × 18'", x: 5, y: 50, w: 28, h: 24, color: '#F5F3FF' },
+  { id: 'bed2', name: 'Bed 2', dims: "12' × 14'", x: 35, y: 58, w: 18, h: 16, color: '#FDF2F8' },
+  { id: 'bed3', name: 'Bed 3', dims: "12' × 14'", x: 55, y: 58, w: 18, h: 16, color: '#FFF1F2' },
+  { id: 'bath_master', name: 'Master Bath', dims: "10' × 12'", x: 5, y: 46, w: 15, h: 10, color: '#ECFEFF', isBath: true },
+  { id: 'bath_guest', name: 'Guest Bath', dims: "8' × 10'", x: 60, y: 40, w: 13, h: 12, color: '#ECFEFF', isBath: true },
+  { id: 'garage', name: 'Garage', dims: "20' × 22'", x: 60, y: 18, w: 20, h: 20, color: '#F1F5F9', isGarage: true },
+];
+
+// Parcel Property View - flat aerial layout
 export default function HouseModel3D({ onRoomClick, darkMode }) {
-  const containerRef = useRef(null);
-  const sceneRef = useRef(null);
-  const cameraRef = useRef(null);
-  const rendererRef = useRef(null);
-  const controlsRef = useRef(null);
-  const animationIdRef = useRef(null);
-  const hoveredObjectRef = useRef(null);
-  
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [showMarkers, setShowMarkers] = useState(true);
   const [hoveredRoom, setHoveredRoom] = useState(null);
-  const [selectedRoom, setSelectedRoom] = useState(null);
-  const [isRotating, setIsRotating] = useState(false);
-  const [showInfo, setShowInfo] = useState(true);
+  const [viewMode, setViewMode] = useState('parcel'); // 'parcel' or 'floorplan'
 
-  // Room definitions - architectural floor plan style
-  const rooms = {
-    livingRoom: {
-      name: 'Living Room',
-      color: 0xf5f5f0,
-      hoverColor: 0xe8e8dd,
-      position: { x: -6, z: -4 },
-      size: { width: 8, depth: 7, height: 0.1 },
-      section: 'spaces',
-      description: '18\' × 22\''
-    },
-    kitchen: {
-      name: 'Kitchen',
-      color: 0xf5f5f0,
-      hoverColor: 0xe8e8dd,
-      position: { x: 4, z: -4 },
-      size: { width: 6, depth: 5, height: 0.1 },
-      section: 'spaces',
-      description: '14\' × 16\''
-    },
-    dining: {
-      name: 'Dining',
-      color: 0xf5f5f0,
-      hoverColor: 0xe8e8dd,
-      position: { x: -1, z: -4 },
-      size: { width: 5, depth: 5, height: 0.1 },
-      section: 'spaces',
-      description: '12\' × 14\''
-    },
-    masterBedroom: {
-      name: 'Master Bedroom',
-      color: 0xf5f5f0,
-      hoverColor: 0xe8e8dd,
-      position: { x: -6, z: 4 },
-      size: { width: 7, depth: 6, height: 0.1 },
-      section: 'spaces',
-      description: '16\' × 18\''
-    },
-    bedroom2: {
-      name: 'Bedroom 2',
-      color: 0xf5f5f0,
-      hoverColor: 0xe8e8dd,
-      position: { x: 2, z: 4 },
-      size: { width: 5, depth: 5, height: 0.1 },
-      section: 'spaces',
-      description: '12\' × 14\''
-    },
-    bedroom3: {
-      name: 'Bedroom 3',
-      color: 0xf5f5f0,
-      hoverColor: 0xe8e8dd,
-      position: { x: 8, z: 4 },
-      size: { width: 5, depth: 5, height: 0.1 },
-      section: 'spaces',
-      description: '12\' × 14\''
-    },
-    bathroom: {
-      name: 'Bathroom',
-      color: 0xe8f4f8,
-      hoverColor: 0xd4e8f0,
-      position: { x: 8, z: -1 },
-      size: { width: 4, depth: 3, height: 0.1 },
-      section: 'spaces',
-      description: '8\' × 10\''
-    },
-    patio: {
-      name: 'Patio',
-      color: 0xd4c4b0,
-      hoverColor: 0xc4b4a0,
-      position: { x: -6, z: -11 },
-      size: { width: 8, depth: 4, height: 0.05 },
-      section: 'exterior',
-      description: 'Outdoor space'
-    },
-  };
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    // Scene setup
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(darkMode ? 0x0f172a : 0xf9f9f9);
-    sceneRef.current = scene;
-
-    // Camera setup - bird's eye view
-    const camera = new THREE.PerspectiveCamera(
-      50,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1,
-      1000
-    );
-    camera.position.set(0, 28, 15);
-    camera.lookAt(0, 0, 0);
-    cameraRef.current = camera;
-
-    // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    containerRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
-
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(20, 30, 20);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    directionalLight.shadow.camera.near = 0.5;
-    directionalLight.shadow.camera.far = 100;
-    directionalLight.shadow.camera.left = -30;
-    directionalLight.shadow.camera.right = 30;
-    directionalLight.shadow.camera.top = 30;
-    directionalLight.shadow.camera.bottom = -30;
-    scene.add(directionalLight);
-
-    // Ground plane
-    const groundGeometry = new THREE.PlaneGeometry(50, 50);
-    const groundMaterial = new THREE.MeshStandardMaterial({ 
-      color: darkMode ? 0x1e293b : 0xe5e7eb,
-      roughness: 0.8,
-      metalness: 0.2
-    });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
-
-    // Grid helper
-    const gridHelper = new THREE.GridHelper(50, 50, darkMode ? 0x334155 : 0xd1d5db, darkMode ? 0x1e293b : 0xe5e7eb);
-    gridHelper.position.y = 0.01;
-    scene.add(gridHelper);
-
-    // Create house structure - architectural style
-    const houseGroup = new THREE.Group();
-    const wallHeight = 2.8;
-    const wallThickness = 0.15;
-
-    // Create floor for each room
-    Object.entries(rooms).forEach(([key, room]) => {
-      const floorGeometry = new THREE.BoxGeometry(
-        room.size.width,
-        room.size.height,
-        room.size.depth
-      );
-
-      const floorMaterial = new THREE.MeshStandardMaterial({
-        color: room.color,
-        roughness: 0.9,
-        metalness: 0.05,
-      });
-
-      const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-      floor.position.set(room.position.x, 0.05, room.position.z);
-      floor.receiveShadow = true;
-      floor.userData = { roomKey: key, roomData: room };
-      houseGroup.add(floor);
-
-      // Add subtle edge lines
-      const edges = new THREE.EdgesGeometry(floorGeometry);
-      const edgeMaterial = new THREE.LineBasicMaterial({ 
-        color: darkMode ? 0x475569 : 0xd1d5db,
-        linewidth: 1
-      });
-      const edgeLines = new THREE.LineSegments(edges, edgeMaterial);
-      floor.add(edgeLines);
-
-      // Add room label on floor
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      canvas.width = 512;
-      canvas.height = 256;
-
-      context.fillStyle = 'rgba(0, 0, 0, 0)';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-
-      context.font = 'bold 42px Inter, sans-serif';
-      context.fillStyle = darkMode ? '#94a3b8' : '#64748b';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.fillText(room.name, canvas.width / 2, canvas.height / 2 - 20);
-
-      context.font = '32px Inter, sans-serif';
-      context.fillStyle = darkMode ? '#64748b' : '#94a3b8';
-      context.fillText(room.description, canvas.width / 2, canvas.height / 2 + 30);
-
-      const texture = new THREE.CanvasTexture(canvas);
-      const labelMaterial = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        opacity: 0.8,
-        depthWrite: false
-      });
-
-      const labelGeometry = new THREE.PlaneGeometry(room.size.width * 0.8, room.size.depth * 0.4);
-      const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial);
-      labelMesh.rotation.x = -Math.PI / 2;
-      labelMesh.position.set(
-        room.position.x,
-        0.12,
-        room.position.z
-      );
-      houseGroup.add(labelMesh);
-      });
-
-    // Interior walls - architectural style (white walls)
-    const wallColor = darkMode ? 0xf0f0f0 : 0xffffff;
-    const interiorWalls = [
-      // Living room boundaries
-      { x: -10, z: -4, width: wallThickness, depth: 7, height: wallHeight },
-      { x: -6, z: -7.5, width: 8, height: wallHeight, depth: wallThickness },
-      { x: -6, z: -0.5, width: 8, height: wallHeight, depth: wallThickness },
-
-      // Kitchen boundaries
-      { x: 7, z: -4, width: wallThickness, depth: 5, height: wallHeight },
-      { x: 4, z: -6.5, width: 6, height: wallHeight, depth: wallThickness },
-
-      // Bedroom walls
-      { x: -6, z: 1, width: 7, height: wallHeight, depth: wallThickness },
-      { x: -9.5, z: 4, width: wallThickness, depth: 6, height: wallHeight },
-      { x: -2.5, z: 4, width: wallThickness, depth: 6, height: wallHeight },
-
-      { x: 4.5, z: 4, width: wallThickness, depth: 5, height: wallHeight },
-      { x: 2, z: 6.5, width: 5, height: wallHeight, depth: wallThickness },
-
-      // Bathroom walls
-      { x: 8, z: -2.5, width: 4, height: wallHeight, depth: wallThickness },
-      { x: 6, z: -1, width: wallThickness, depth: 3, height: wallHeight },
-    ];
-
-    interiorWalls.forEach(wall => {
-      const wallGeometry = new THREE.BoxGeometry(wall.width, wall.height, wall.depth);
-      const wallMaterial = new THREE.MeshStandardMaterial({
-        color: wallColor,
-        roughness: 0.7,
-        metalness: 0.05
-      });
-      const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
-      wallMesh.position.set(wall.x, wall.height / 2, wall.z);
-      wallMesh.castShadow = true;
-      wallMesh.receiveShadow = true;
-      houseGroup.add(wallMesh);
-    });
-
-    // Outer perimeter walls
-    const exteriorWalls = [
-      { x: 0, z: -13, width: 24, depth: wallThickness, height: wallHeight },
-      { x: 0, z: 7.5, width: 24, depth: wallThickness, height: wallHeight },
-      { x: -12, z: -3, width: wallThickness, depth: 20, height: wallHeight },
-      { x: 12, z: -3, width: wallThickness, depth: 20, height: wallHeight },
-    ];
-
-    exteriorWalls.forEach(wall => {
-      const wallGeometry = new THREE.BoxGeometry(wall.width, wall.height, wall.depth);
-      const wallMaterial = new THREE.MeshStandardMaterial({
-        color: wallColor,
-        roughness: 0.7,
-        metalness: 0.05
-      });
-      const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
-      wallMesh.position.set(wall.x, wall.height / 2, wall.z);
-      wallMesh.castShadow = true;
-      wallMesh.receiveShadow = true;
-      houseGroup.add(wallMesh);
-    });
-
-    scene.add(houseGroup);
-
-    // Simple orbit controls (manual implementation)
-    let isDragging = false;
-    let previousMousePosition = { x: 0, y: 0 };
-    let rotation = { x: 0, y: 0 };
-
-    const controls = {
-      rotate: (deltaX, deltaY) => {
-        rotation.y += deltaX * 0.005;
-        rotation.x += deltaY * 0.005;
-        rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotation.x));
-        
-        const radius = 35;
-        camera.position.x = radius * Math.cos(rotation.x) * Math.sin(rotation.y);
-        camera.position.y = radius * Math.sin(rotation.x) + 15;
-        camera.position.z = radius * Math.cos(rotation.x) * Math.cos(rotation.y);
-        camera.lookAt(0, 2, 0);
-      },
-      zoom: (delta) => {
-        const zoomSpeed = 2;
-        const direction = new THREE.Vector3();
-        camera.getWorldDirection(direction);
-        camera.position.addScaledVector(direction, delta * zoomSpeed);
-      },
-      reset: () => {
-        rotation = { x: 0.4, y: 0.8 };
-        controls.rotate(0, 0);
-      }
-    };
-
-    controlsRef.current = controls;
-
-    // Mouse events
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    const onMouseDown = (event) => {
-      if (event.target.tagName === 'CANVAS') {
-        isDragging = true;
-        previousMousePosition = {
-          x: event.clientX,
-          y: event.clientY
-        };
-      }
-    };
-
-    const onMouseMove = (event) => {
-      if (!containerRef.current) return;
-      
-      const rect = containerRef.current.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-      if (isDragging) {
-        const deltaX = event.clientX - previousMousePosition.x;
-        const deltaY = event.clientY - previousMousePosition.y;
-        controls.rotate(deltaX, deltaY);
-        previousMousePosition = {
-          x: event.clientX,
-          y: event.clientY
-        };
-      } else {
-        // Hover detection
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(houseGroup.children, true);
-        
-        if (intersects.length > 0) {
-          const object = intersects[0].object;
-          if (object.userData.roomKey) {
-            document.body.style.cursor = 'pointer';
-            
-            if (hoveredObjectRef.current !== object) {
-              if (hoveredObjectRef.current && hoveredObjectRef.current.material) {
-                const roomData = hoveredObjectRef.current.userData.roomData;
-                hoveredObjectRef.current.material.color.setHex(roomData.color);
-                hoveredObjectRef.current.material.opacity = 0.85;
-              }
-              
-              hoveredObjectRef.current = object;
-              const roomData = object.userData.roomData;
-              object.material.color.setHex(roomData.hoverColor);
-              object.material.opacity = 1;
-              setHoveredRoom(roomData);
-            }
-          }
-        } else {
-          document.body.style.cursor = 'default';
-          if (hoveredObjectRef.current && hoveredObjectRef.current.material) {
-            const roomData = hoveredObjectRef.current.userData.roomData;
-            hoveredObjectRef.current.material.color.setHex(roomData.color);
-            hoveredObjectRef.current.material.opacity = 0.85;
-            hoveredObjectRef.current = null;
-          }
-          setHoveredRoom(null);
-        }
-      }
-    };
-
-    const onMouseUp = () => {
-      isDragging = false;
-    };
-
-    const onClick = (event) => {
-      if (!containerRef.current || isDragging) return;
-      
-      const rect = containerRef.current.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(houseGroup.children, true);
-      
-      if (intersects.length > 0) {
-        const object = intersects[0].object;
-        if (object.userData.roomKey) {
-          const roomData = object.userData.roomData;
-          setSelectedRoom(roomData);
-          if (onRoomClick) {
-            onRoomClick(roomData);
-          }
-        }
-      }
-    };
-
-    const onWheel = (event) => {
-      event.preventDefault();
-      controls.zoom(event.deltaY > 0 ? -1 : 1);
-    };
-
-    window.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-    containerRef.current.addEventListener('click', onClick);
-    containerRef.current.addEventListener('wheel', onWheel, { passive: false });
-
-    // Animation loop
-    let autoRotateAngle = 0;
-    const animate = () => {
-      animationIdRef.current = requestAnimationFrame(animate);
-      
-      if (isRotating) {
-        autoRotateAngle += 0.003;
-        houseGroup.rotation.y = autoRotateAngle;
-      }
-      
-      renderer.render(scene, camera);
-    };
-    animate();
-
-    // Handle resize
-    const handleResize = () => {
-      if (!containerRef.current) return;
-      const width = containerRef.current.clientWidth;
-      const height = containerRef.current.clientHeight;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    // Initial rotation setup - top-down angled view
-    rotation = { x: 1.2, y: 0 };
-    controls.rotate(0, 0);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('resize', handleResize);
-      if (containerRef.current) {
-        containerRef.current.removeEventListener('click', onClick);
-        containerRef.current.removeEventListener('wheel', onWheel);
-      }
-      if (animationIdRef.current) {
-        cancelAnimationFrame(animationIdRef.current);
-      }
-      if (rendererRef.current && containerRef.current) {
-        containerRef.current.removeChild(rendererRef.current.domElement);
-      }
-      document.body.style.cursor = 'default';
-    };
-  }, [darkMode, isRotating, onRoomClick]);
-
-  const handleZoomIn = () => {
-    if (controlsRef.current) {
-      controlsRef.current.zoom(1);
-    }
-  };
-
-  const handleZoomOut = () => {
-    if (controlsRef.current) {
-      controlsRef.current.zoom(-1);
-    }
-  };
-
-  const handleReset = () => {
-    if (controlsRef.current) {
-      controlsRef.current.reset();
+  const handleRoomClick = (room) => {
+    if (onRoomClick) {
+      onRoomClick({ name: room.name, description: room.dims, section: 'spaces' });
     }
   };
 
   return (
     <div className="relative w-full h-full">
-      <div ref={containerRef} className="w-full h-full rounded-2xl overflow-hidden" />
-      
-      {/* Controls Overlay */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
+      {/* View Mode Toggle */}
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-xl p-1 shadow-lg border border-gray-200">
         <button
-          onClick={handleZoomIn}
-          className={`p-3 ${darkMode ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'} rounded-xl shadow-lg hover:scale-110 transition-transform`}
-          title="Zoom In"
+          onClick={() => setViewMode('parcel')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            viewMode === 'parcel'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
         >
-          <ZoomIn className="w-5 h-5" />
+          Property View
         </button>
         <button
-          onClick={handleZoomOut}
-          className={`p-3 ${darkMode ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'} rounded-xl shadow-lg hover:scale-110 transition-transform`}
-          title="Zoom Out"
+          onClick={() => setViewMode('floorplan')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            viewMode === 'floorplan'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
         >
-          <ZoomOut className="w-5 h-5" />
-        </button>
-        <button
-          onClick={handleReset}
-          className={`p-3 ${darkMode ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'} rounded-xl shadow-lg hover:scale-110 transition-transform`}
-          title="Reset View"
-        >
-          <RotateCcw className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => setIsRotating(!isRotating)}
-          className={`p-3 ${isRotating ? 'bg-blue-600' : darkMode ? 'bg-slate-800' : 'bg-white'} ${isRotating ? 'text-white' : darkMode ? 'text-white' : 'text-gray-900'} rounded-xl shadow-lg hover:scale-110 transition-transform`}
-          title="Auto Rotate"
-        >
-          <RotateCcw className={`w-5 h-5 ${isRotating ? 'animate-spin' : ''}`} />
+          Floor Plan
         </button>
       </div>
 
-      {/* Info Panel */}
-      {showInfo && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`absolute bottom-4 left-4 ${darkMode ? 'bg-slate-800/90 border-slate-700' : 'bg-white/90 border-gray-200'} backdrop-blur-sm border rounded-2xl p-4 max-w-xs`}
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Eye className={`w-4 h-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-              <h3 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                Interactive 3D View
-              </h3>
-            </div>
-            <button
-              onClick={() => setShowInfo(false)}
-              className={`${darkMode ? 'text-slate-400 hover:text-white' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <ul className={`text-xs space-y-1 ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>
-            <li className="flex items-center gap-2">
-              <Move className="w-3 h-3" />
-              <span>Drag to rotate view</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Maximize2 className="w-3 h-3" />
-              <span>Scroll to zoom</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Info className="w-3 h-3" />
-              <span>Click rooms for details</span>
-            </li>
-          </ul>
-        </motion.div>
-      )}
-
-      {!showInfo && (
+      {/* Controls */}
+      <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
         <button
-          onClick={() => setShowInfo(true)}
-          className={`absolute bottom-4 left-4 p-3 ${darkMode ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'} rounded-xl shadow-lg hover:scale-110 transition-transform`}
-          title="Show Info"
+          onClick={() => setShowMarkers(!showMarkers)}
+          className={`p-2.5 rounded-xl shadow-lg transition-all text-xs font-medium flex items-center gap-1.5 ${
+            showMarkers
+              ? 'bg-red-500 text-white'
+              : darkMode ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'
+          }`}
+          title="Toggle Emergency Markers"
         >
-          <Info className="w-5 h-5" />
+          <Zap className="w-4 h-4" />
+          <span className="hidden sm:inline">{showMarkers ? 'Hide' : 'Show'} Shutoffs</span>
         </button>
-      )}
+      </div>
 
-      {/* Hover Tooltip */}
-      <AnimatePresence>
-        {hoveredRoom && (
+      <AnimatePresence mode="wait">
+        {viewMode === 'parcel' ? (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className={`absolute top-4 left-4 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} border rounded-xl shadow-lg p-4 pointer-events-none`}
+            key="parcel"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="w-full h-full"
           >
-            <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
-              {hoveredRoom.name}
-            </h3>
-            <p className={`text-sm ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>
-              {hoveredRoom.description}
-            </p>
-            <p className={`text-xs ${darkMode ? 'text-blue-400' : 'text-blue-600'} mt-2`}>
-              Click to view specifications
-            </p>
+            {/* Parcel / Aerial View */}
+            <div className={`w-full h-full relative ${darkMode ? 'bg-slate-800' : 'bg-gradient-to-br from-green-100 via-green-50 to-emerald-100'} rounded-2xl overflow-hidden`}>
+              {/* Property boundary */}
+              <div className="absolute inset-[8%] border-2 border-dashed border-green-300/60 rounded-xl" />
+
+              {/* Lot features - Trees */}
+              {[
+                { top: '10%', left: '10%', size: 'w-14 h-14' },
+                { top: '8%', left: '22%', size: 'w-12 h-12' },
+                { top: '12%', left: '16%', size: 'w-16 h-16' },
+                { top: '75%', left: '65%', size: 'w-10 h-10' },
+                { top: '80%', left: '75%', size: 'w-12 h-12' },
+              ].map((tree, i) => (
+                <div
+                  key={i}
+                  className={`absolute ${tree.size} rounded-full bg-green-400/30 border border-green-500/20 flex items-center justify-center`}
+                  style={{ top: tree.top, left: tree.left }}
+                >
+                  <Trees className="w-5 h-5 text-green-600/40" />
+                </div>
+              ))}
+
+              {/* Driveway */}
+              <div
+                className={`absolute ${darkMode ? 'bg-slate-600' : 'bg-stone-200'} rounded-lg`}
+                style={{ top: '30%', right: '5%', width: '8%', height: '25%' }}
+              />
+              <div
+                className={`absolute ${darkMode ? 'bg-slate-600' : 'bg-stone-200'} rounded-lg`}
+                style={{ bottom: '5%', right: '5%', width: '20%', height: '6%' }}
+              />
+
+              {/* House footprint */}
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className={`absolute ${
+                  darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'
+                } border-2 shadow-2xl rounded-xl cursor-pointer hover:shadow-3xl transition-shadow`}
+                style={{ top: '20%', left: '18%', width: '58%', height: '55%' }}
+                onClick={() => setViewMode('floorplan')}
+              >
+                {/* House label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className={`w-16 h-16 rounded-2xl ${darkMode ? 'bg-slate-600' : 'bg-blue-50'} flex items-center justify-center mb-3`}>
+                    <Home className={`w-8 h-8 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                  </div>
+                  <p className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    The Miller Residence
+                  </p>
+                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'} mt-1`}>
+                    2,847 sq ft · 4 Bed · 3.5 Bath
+                  </p>
+                  <div className={`mt-4 flex items-center gap-1.5 px-4 py-2 ${darkMode ? 'bg-blue-600' : 'bg-blue-600'} text-white rounded-lg text-sm font-medium`}>
+                    <Eye className="w-4 h-4" />
+                    <span>View Floor Plan</span>
+                  </div>
+                </div>
+
+                {/* Garage wing */}
+                <div
+                  className={`absolute ${darkMode ? 'bg-slate-600 border-slate-500' : 'bg-gray-100 border-gray-200'} border rounded-lg flex items-center justify-center`}
+                  style={{ top: '10%', right: '-18%', width: '16%', height: '35%' }}
+                >
+                  <Car className={`w-5 h-5 ${darkMode ? 'text-slate-400' : 'text-gray-400'}`} />
+                </div>
+              </motion.div>
+
+              {/* Patio */}
+              <div
+                className={`absolute ${darkMode ? 'bg-slate-600/50 border-slate-500' : 'bg-amber-50 border-amber-200'} border rounded-lg`}
+                style={{ top: '15%', left: '25%', width: '20%', height: '8%' }}
+              >
+                <p className={`text-center mt-1 text-xs ${darkMode ? 'text-slate-400' : 'text-amber-600/60'}`}>Patio</p>
+              </div>
+
+              {/* Property address label */}
+              <div className={`absolute bottom-4 left-4 ${darkMode ? 'bg-slate-700/90' : 'bg-white/90'} backdrop-blur-sm rounded-xl px-4 py-2.5 shadow-lg border ${darkMode ? 'border-slate-600' : 'border-gray-200'}`}>
+                <p className={`text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-gray-400'} tracking-widest uppercase`}>Property Parcel</p>
+                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>0.31 Acres · R-1 Zoning</p>
+                <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'} mt-0.5`}>Mill Valley, CA</p>
+              </div>
+
+              {/* Emergency Markers on Parcel View */}
+              <AnimatePresence>
+                {showMarkers && EMERGENCY_MARKERS.map((marker) => (
+                  <motion.button
+                    key={marker.id}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 300 }}
+                    onClick={(e) => { e.stopPropagation(); setSelectedMarker(marker); }}
+                    className={`absolute z-10 w-9 h-9 ${marker.color} rounded-full flex items-center justify-center shadow-lg cursor-pointer ring-2 ${marker.ringColor} ring-offset-2 ${darkMode ? 'ring-offset-slate-800' : 'ring-offset-green-50'}`}
+                    style={{ top: marker.position.top, left: marker.position.left, transform: 'translate(-50%, -50%)' }}
+                    title={marker.label}
+                  >
+                    <marker.icon className="w-4 h-4 text-white" />
+                    {marker.pulse && (
+                      <span className={`absolute inset-0 rounded-full ${marker.color} opacity-40 animate-ping`} />
+                    )}
+                  </motion.button>
+                ))}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="floorplan"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="w-full h-full"
+          >
+            {/* Floor Plan View */}
+            <div className={`w-full h-full relative ${darkMode ? 'bg-slate-800' : 'bg-gray-50'} rounded-2xl overflow-hidden p-6`}>
+              {/* Back to parcel button */}
+              <button
+                onClick={() => setViewMode('parcel')}
+                className={`absolute top-14 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 ${
+                  darkMode ? 'bg-slate-700 text-white' : 'bg-white text-gray-700'
+                } rounded-lg shadow-md text-xs font-medium hover:scale-105 transition-transform`}
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Back to Property</span>
+              </button>
+
+              {/* Grid background */}
+              <div className="absolute inset-0 opacity-10"
+                style={{
+                  backgroundImage: `linear-gradient(${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px), linear-gradient(90deg, ${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px)`,
+                  backgroundSize: '20px 20px'
+                }}
+              />
+
+              {/* Rooms */}
+              <div className="relative w-full h-full">
+                {ROOMS.map((room) => (
+                  <motion.div
+                    key={room.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3, delay: ROOMS.indexOf(room) * 0.05 }}
+                    className={`absolute border-2 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center ${
+                      hoveredRoom === room.id
+                        ? darkMode
+                          ? 'border-blue-400 shadow-lg shadow-blue-500/20 z-10'
+                          : 'border-blue-400 shadow-lg shadow-blue-200 z-10'
+                        : darkMode
+                        ? 'border-slate-600 hover:border-slate-500'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    style={{
+                      left: `${room.x}%`,
+                      top: `${room.y}%`,
+                      width: `${room.w}%`,
+                      height: `${room.h}%`,
+                      backgroundColor: darkMode
+                        ? hoveredRoom === room.id ? '#1e293b' : '#0f172a'
+                        : room.color,
+                    }}
+                    onMouseEnter={() => setHoveredRoom(room.id)}
+                    onMouseLeave={() => setHoveredRoom(null)}
+                    onClick={() => handleRoomClick(room)}
+                  >
+                    <p className={`text-xs font-semibold ${
+                      darkMode ? 'text-white' : 'text-gray-700'
+                    } ${room.isBath || room.isGarage ? 'text-[10px]' : ''}`}>
+                      {room.name}
+                    </p>
+                    <p className={`text-[10px] mt-0.5 ${darkMode ? 'text-slate-400' : 'text-gray-400'}`}>
+                      {room.dims}
+                    </p>
+                    {hoveredRoom === room.id && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-1 mt-1 text-blue-600"
+                      >
+                        <span className="text-[9px] font-medium">View specs</span>
+                        <ChevronRight className="w-2.5 h-2.5" />
+                      </motion.div>
+                    )}
+                  </motion.div>
+                ))}
+
+                {/* Emergency Markers on Floor Plan */}
+                <AnimatePresence>
+                  {showMarkers && EMERGENCY_MARKERS.map((marker) => {
+                    // Remap marker positions for floor plan view
+                    const floorPlanPositions = {
+                      water_shutoff: { top: '85%', left: '25%' },
+                      gas_shutoff: { top: '40%', left: '5%' },
+                      electrical_panel: { top: '30%', left: '72%' },
+                      water_heater: { top: '38%', left: '68%' },
+                    };
+                    const pos = floorPlanPositions[marker.id] || marker.position;
+
+                    return (
+                      <motion.button
+                        key={marker.id}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        onClick={() => setSelectedMarker(marker)}
+                        className={`absolute z-10 w-8 h-8 ${marker.color} rounded-full flex items-center justify-center shadow-lg cursor-pointer ring-2 ${marker.ringColor} ring-offset-1 ${darkMode ? 'ring-offset-slate-800' : 'ring-offset-gray-50'}`}
+                        style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}
+                        title={marker.label}
+                      >
+                        <marker.icon className="w-3.5 h-3.5 text-white" />
+                        {marker.pulse && (
+                          <span className={`absolute inset-0 rounded-full ${marker.color} opacity-30 animate-ping`} />
+                        )}
+                      </motion.button>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+
+              {/* Legend */}
+              <div className={`absolute bottom-4 left-4 ${darkMode ? 'bg-slate-700/90' : 'bg-white/90'} backdrop-blur-sm rounded-xl px-4 py-2.5 shadow-lg border ${darkMode ? 'border-slate-600' : 'border-gray-200'}`}>
+                <p className={`text-[10px] font-medium ${darkMode ? 'text-slate-400' : 'text-gray-400'} tracking-widest uppercase mb-1.5`}>Floor Plan</p>
+                <p className={`text-xs ${darkMode ? 'text-white' : 'text-gray-700'}`}>Click any room for full specs</p>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Selected Room Detail */}
+      {/* Emergency Marker Detail Panel */}
       <AnimatePresence>
-        {selectedRoom && (
+        {selectedMarker && (
           <motion.div
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 100 }}
-            className={`absolute top-4 right-20 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} border rounded-2xl shadow-xl p-5 max-w-sm`}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className={`absolute bottom-4 right-4 ${
+              darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-200'
+            } border rounded-2xl shadow-2xl p-5 w-80 z-30`}
           >
             <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {selectedRoom.name}
-                </h3>
-                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                  {selectedRoom.description}
-                </p>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 ${selectedMarker.color} rounded-xl flex items-center justify-center`}>
+                  <selectedMarker.icon className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {selectedMarker.label}
+                  </h3>
+                  <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {selectedMarker.location}
+                  </p>
+                </div>
               </div>
               <button
-                onClick={() => setSelectedRoom(null)}
+                onClick={() => setSelectedMarker(null)}
                 className={`${darkMode ? 'text-slate-400 hover:text-white' : 'text-gray-400 hover:text-gray-600'}`}
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <button
-              onClick={() => onRoomClick && onRoomClick(selectedRoom)}
-              className={`w-full py-2 px-4 ${darkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-xl text-sm font-medium transition-colors`}
-            >
-              View Full Specifications
-            </button>
+            <div className={`${darkMode ? 'bg-slate-600' : 'bg-gray-50'} rounded-xl p-3`}>
+              <p className={`text-xs ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                {selectedMarker.detail}
+              </p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

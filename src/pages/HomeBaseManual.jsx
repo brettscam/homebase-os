@@ -20,7 +20,6 @@ import {
   MapPin,
   Info,
   ExternalLink,
-  Menu,
   X,
   ChevronRight,
   Activity,
@@ -212,169 +211,64 @@ export default function HomeBaseManual() {
   };
 
   return (
-    <div className={`flex h-screen overflow-hidden ${darkMode ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}>
-      {/* Sidebar Navigation */}
-      <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-72 ${
-          darkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-100'
-        } border-r transform transition-transform duration-300 lg:transform-none ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
-      >
-        <div className="flex flex-col h-full">
-          {/* Logo Header */}
-          <div className="p-8 border-b border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className={`text-2xl font-light tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                HOMEBASE
-              </h1>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div>
-              <p className={`text-xs font-medium tracking-widest uppercase mb-1 ${darkMode ? 'text-slate-400' : 'text-gray-400'}`}>
-                Property
-              </p>
-              <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>The Miller Residence</p>
-              <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>Mill Valley, CA</p>
-            </div>
-
-            {/* Overall Completion */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-gray-500">Manual Completion</span>
-                <span className="text-lg font-semibold text-gray-900">{overallCompletion}%</span>
-              </div>
-              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${overallCompletion}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
+    <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}>
+      {/* Chapter Navigation Strip */}
+      <div className={`sticky top-0 z-30 ${darkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-gray-100'} backdrop-blur-xl border-b`}>
+        <div className="flex items-center gap-2 px-4 py-2">
+          {/* Completion Badge */}
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg mr-2 ${darkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
+            <div className="w-6 h-6 relative">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="none" stroke={darkMode ? '#334155' : '#e5e7eb'} strokeWidth="2" />
+                <circle cx="12" cy="12" r="10" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round"
+                  strokeDasharray={`${overallCompletion * 0.628} 62.8`}
                 />
-              </div>
-              <p className="text-xs text-gray-400 mt-2">{totalCompleted} of {totalItems} items documented</p>
+              </svg>
             </div>
+            <span className={`text-xs font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{overallCompletion}%</span>
           </div>
 
-          {/* Table of Contents */}
-          <nav className="flex-1 overflow-y-auto p-4">
-            <p className={`text-xs font-medium tracking-widest uppercase mb-4 px-4 ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>
-              Table of Contents
-            </p>
-            <div className="space-y-1">
-              {chapters.map((chapter) => {
-                const completion = completionData[chapter.id];
-                return (
-                  <button
-                    key={chapter.id}
-                    onClick={() => scrollToChapter(chapter.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${
-                      activeChapter === chapter.id
-                        ? darkMode
-                          ? 'bg-slate-800 text-white'
-                          : 'bg-blue-50 text-blue-600'
-                        : darkMode
-                        ? 'text-slate-300 hover:bg-slate-800'
-                        : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <chapter.icon className="w-4.5 h-4.5" strokeWidth={1.5} />
-                    <div className="flex-1">
-                      <span className="font-medium text-sm">{chapter.label}</span>
-                      {completion && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${
-                                completion.percentage === 100
-                                  ? 'bg-green-500'
-                                  : completion.percentage >= 60
-                                  ? 'bg-yellow-500'
-                                  : 'bg-orange-500'
-                              }`}
-                              style={{ width: `${completion.percentage}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-400">{completion.percentage}%</span>
-                        </div>
-                      )}
-                    </div>
-                    {activeChapter === chapter.id && (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
-
-          {/* Footer */}
-          <div className={`p-6 border-t ${darkMode ? 'border-slate-700' : 'border-gray-100'}`}>
-            <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>
-              Last Updated: December 2024
-            </p>
-            <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-gray-400'} mt-1`}>
-              Data Version: 2024.1
-            </p>
+          {/* Scrollable Chapter Tabs */}
+          <div className="flex-1 flex items-center gap-1 overflow-x-auto scrollbar-hide">
+            {chapters.map((chapter) => (
+              <button
+                key={chapter.id}
+                onClick={() => scrollToChapter(chapter.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                  activeChapter === chapter.id
+                    ? darkMode
+                      ? 'bg-slate-700 text-white'
+                      : 'bg-blue-50 text-blue-600'
+                    : darkMode
+                    ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                }`}
+              >
+                <chapter.icon className="w-3.5 h-3.5" strokeWidth={1.5} />
+                <span>{chapter.label}</span>
+              </button>
+            ))}
           </div>
-        </div>
-      </aside>
 
-      {/* Overlay for mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar */}
-        <header className={`${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-100'} border-b px-6 py-4 flex items-center justify-between`}>
+          {/* Add Info Button */}
           <button
-            onClick={() => setSidebarOpen(true)}
-            className={`lg:hidden ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}
+            onClick={() => {
+              setSelectedSection(activeChapter);
+              setShowAddInfoModal(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-xs font-medium ml-2"
           >
-            <Menu className="w-5 h-5" />
+            <Info className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Add Info</span>
           </button>
+        </div>
+      </div>
 
-          <div className="flex-1 flex justify-end gap-3">
-            <button
-              onClick={() => setSearchOpen(true)}
-              className={`flex items-center gap-3 px-4 py-2 ${
-                darkMode ? 'bg-slate-800 text-slate-300' : 'bg-gray-50 text-gray-600'
-              } rounded-xl hover:bg-gray-100 transition-colors`}
-            >
-              <Search className="w-4 h-4" />
-              <span className="text-sm hidden sm:inline">Ask HomeBase...</span>
-              <kbd className="hidden md:inline-flex items-center px-2 py-0.5 text-xs bg-white border border-gray-200 rounded">
-                ⌘K
-              </kbd>
-            </button>
-            <button
-              onClick={() => {
-                setSelectedSection(activeChapter);
-                setShowAddInfoModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
-            >
-              <Info className="w-4 h-4" />
-              <span className="text-sm hidden sm:inline">Add Info</span>
-            </button>
-          </div>
-        </header>
-
-        {/* Scrollable Content */}
-        <main
-          ref={contentRef}
-          className={`flex-1 overflow-y-auto ${darkMode ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}
-        >
+      {/* Scrollable Content */}
+      <main
+        ref={contentRef}
+        className={`${darkMode ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}
+      >
           <div className="max-w-5xl mx-auto px-6 py-12 space-y-20">
             {/* CHAPTER 0: 3D MODEL */}
             <section id="chapter-model3d" className="scroll-mt-24">
@@ -387,10 +281,10 @@ export default function HomeBaseManual() {
                   <Box className={`w-6 h-6 ${darkMode ? 'text-slate-300' : 'text-gray-900'}`} />
                   <div>
                     <h2 className={`text-3xl font-light tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      Interactive 3D Model
+                      Interactive Property Map
                     </h2>
                     <p className={`text-sm mt-2 ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                      Explore the digital twin of The Miller Residence
+                      Aerial view of property with emergency shutoff locations
                     </p>
                   </div>
                 </div>
@@ -401,24 +295,25 @@ export default function HomeBaseManual() {
                   </div>
                 </div>
 
-                {/* Legend */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-6">
+                {/* Emergency Legend */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
                   {[
-                    { name: 'Kitchen', color: 'bg-blue-600' },
-                    { name: 'Living Room', color: 'bg-green-600' },
-                    { name: 'Master Bedroom', color: 'bg-purple-600' },
-                    { name: 'Garage', color: 'bg-slate-600' },
-                    { name: 'Dining Room', color: 'bg-amber-600' },
-                    { name: 'Bedroom 2', color: 'bg-pink-600' },
-                  ].map((room) => (
+                    { name: 'Water Shutoff', color: 'bg-blue-500', desc: 'Front Yard' },
+                    { name: 'Gas Shutoff', color: 'bg-orange-500', desc: 'North Wall' },
+                    { name: 'Electrical Panel', color: 'bg-yellow-500', desc: 'Garage' },
+                    { name: 'Water Heater', color: 'bg-cyan-500', desc: 'Garage' },
+                  ].map((item) => (
                     <div
-                      key={room.name}
+                      key={item.name}
                       className={`flex items-center gap-3 ${darkMode ? 'bg-slate-800' : 'bg-white'} rounded-xl p-3 border ${darkMode ? 'border-slate-700' : 'border-gray-100'}`}
                     >
-                      <div className={`w-4 h-4 ${room.color} rounded`} />
-                      <span className={`text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {room.name}
-                      </span>
+                      <div className={`w-4 h-4 ${item.color} rounded-full`} />
+                      <div>
+                        <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {item.name}
+                        </span>
+                        <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>{item.desc}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1850,7 +1745,6 @@ export default function HomeBaseManual() {
             </section>
           </div>
         </main>
-      </div>
 
       {/* Add Info Modal */}
       <AddInfoModal
