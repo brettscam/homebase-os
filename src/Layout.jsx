@@ -163,7 +163,7 @@ export default function Layout({ children, currentPageName }) {
               }`}
             >
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
-              <span className="hidden sm:inline">Ask AI</span>
+              <span className="hidden sm:inline">Ask</span>
             </Link>
             <Link
               to={createPageUrl('Admin')}
