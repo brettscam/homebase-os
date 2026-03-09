@@ -53,6 +53,7 @@ import Onboarding from './pages/Onboarding';
 import Projects from './pages/Projects';
 import ContactsAccounts from './pages/ContactsAccounts';
 import Admin from './pages/Admin';
+import AskAI from './pages/AskAI';
 import __Layout from './Layout.jsx';
 
 
@@ -63,6 +64,7 @@ export const PAGES = {
     "Projects": Projects,
     "ContactsAccounts": ContactsAccounts,
     "Admin": Admin,
+    "AskAI": AskAI,
 }
 
 export const pagesConfig = {
