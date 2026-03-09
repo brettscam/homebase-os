@@ -392,6 +392,7 @@ const RoomDetailView = () => (
 
 // Emergency View
 const EmergencyView = () => {
+  const homeData = getHomeData();
   const emergencyItems = [
     {
       icon: Droplets,
@@ -480,25 +481,33 @@ const EmergencyView = () => {
         >
           <h2 className="text-xs font-medium text-slate-500 tracking-widest uppercase mb-4">Emergency Contacts</h2>
           <div className="space-y-3">
-            {[
-              { name: 'Plumber', company: 'ABC Plumbing', phone: '(555) 123-4567' },
-              { name: 'Electrician', company: 'Bright Spark Electric', phone: '(555) 234-5678' },
-              { name: 'HVAC', company: 'Cool Air Services', phone: '(555) 345-6789' },
-            ].map((contact, i) => (
-              <a
-                key={i}
-                href={`tel:${contact.phone.replace(/\D/g, '')}`}
-                className="flex items-center justify-between bg-slate-800 rounded-2xl p-4 border border-slate-700"
-              >
-                <div>
-                  <p className="font-medium text-white">{contact.name}</p>
-                  <p className="text-sm text-slate-400">{contact.company}</p>
+            {(() => {
+              const emergencyContacts = (homeData.contacts || []).filter(c => c.isEmergency);
+              if (emergencyContacts.length > 0) {
+                return emergencyContacts.map((contact) => (
+                  <a
+                    key={contact.id}
+                    href={contact.phone ? `tel:${contact.phone.replace(/\D/g, '')}` : '#'}
+                    className="flex items-center justify-between bg-slate-800 rounded-2xl p-4 border border-slate-700"
+                  >
+                    <div>
+                      <p className="font-medium text-white">{contact.name}</p>
+                      <p className="text-sm text-slate-400">{contact.trade || contact.company || ''}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-blue-400 text-sm">{contact.phone || 'No phone'}</p>
+                    </div>
+                  </a>
+                ));
+              }
+              // Fallback placeholder when no emergency contacts added yet
+              return (
+                <div className="text-center py-6">
+                  <p className="text-slate-400 text-sm">No emergency contacts yet.</p>
+                  <p className="text-slate-500 text-xs mt-1">Add contacts and flag them as emergency in the Contacts page.</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-blue-400 text-sm">{contact.phone}</p>
-                </div>
-              </a>
-            ))}
+              );
+            })()}
           </div>
         </motion.div>
       </div>
