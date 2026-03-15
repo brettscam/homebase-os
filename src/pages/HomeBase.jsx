@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { base44 } from '@/api/base44Client';
 import { getHomeData, calculateCompletion } from '../lib/homeDataStore';
+import { useProperty } from '@/lib/PropertyContext';
+import { systemsArrayToLegacy } from '@/lib/supabaseDataStore';
 import {
   Home,
   MessageCircle,
@@ -33,6 +34,86 @@ import {
   ArrowRight,
   Wrench
 } from 'lucide-react';
+
+// Bridge hook: prefer Supabase data (from PropertyContext), fall back to localStorage
+function useHomeData() {
+  const { activeProperty, homeData: supaData, isLoading } = useProperty();
+
+  if (isLoading) return { homeData: getHomeData(), loading: true };
+
+  if (activeProperty && supaData) {
+    // Convert Supabase shape back to the legacy shape the UI expects
+    return {
+      homeData: {
+        property: {
+          address: activeProperty.address || '',
+          city: activeProperty.city || '',
+          state: activeProperty.state || '',
+          zip: activeProperty.zip || '',
+          yearBuilt: activeProperty.year_built || '',
+          sqft: activeProperty.sqft || '',
+          lotSize: activeProperty.lot_size || '',
+          stories: activeProperty.stories || '',
+          bedrooms: activeProperty.bedrooms || '',
+          bathrooms: activeProperty.bathrooms || '',
+        },
+        rooms: (supaData.rooms || []).map(r => ({
+          id: r.id,
+          name: r.name,
+          type: r.type,
+          floor: r.floor,
+          sqft: r.sqft,
+          notes: r.notes,
+        })),
+        appliances: (supaData.appliances || []).map(a => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          brand: a.brand,
+          model: a.model,
+          serialNumber: a.serial_number,
+          installDate: a.install_date,
+          notes: a.notes,
+        })),
+        systems: systemsArrayToLegacy(supaData.systems || []),
+        smartHome: {
+          wifi: { networkName: '', password: '' },
+          doorLocks: [],
+          security: { provider: '', panelLocation: '' },
+          garage: { brand: '', code: '' },
+        },
+        emergency: {
+          waterShutoff: { location: '', instructions: '' },
+          gasShutoff: { location: '', instructions: '' },
+          electricalPanel: { location: '', instructions: '' },
+          contacts: [],
+        },
+        exterior: {
+          roof: { type: '', material: '', installDate: '' },
+          gutters: { type: '', material: '' },
+          siding: { material: '' },
+        },
+        paint: (supaData.paintRecords || []).map(p => ({
+          id: p.id,
+          room: p.room_name,
+          colorName: p.color_name,
+          colorCode: p.color_hex,
+          brand: p.brand,
+          finish: p.finish,
+        })),
+        contacts: supaData.contacts || [],
+        utilities: supaData.utilities || [],
+        documents: supaData.documents || [],
+        onboardingComplete: activeProperty.onboarding_complete,
+        lastUpdated: activeProperty.updated_at,
+      },
+      loading: false,
+    };
+  }
+
+  // Fallback to localStorage
+  return { homeData: getHomeData(), loading: false };
+}
 
 // Health Score Ring Component
 const HealthScoreRing = ({ score }) => {
@@ -121,7 +202,7 @@ const SubNav = ({ activeView, setActiveView }) => {
 
 // Dashboard View
 const DashboardView = () => {
-  const homeData = getHomeData();
+  const { homeData } = useHomeData();
   const completion = calculateCompletion(homeData);
   const hasStartedOnboarding = homeData.onboardingComplete || completion.overall.percentage > 0;
   const wifiName = homeData.smartHome?.wifi?.networkName;
@@ -392,7 +473,7 @@ const RoomDetailView = () => (
 
 // Emergency View
 const EmergencyView = () => {
-  const homeData = getHomeData();
+  const { homeData } = useHomeData();
   const emergencyItems = [
     {
       icon: Droplets,

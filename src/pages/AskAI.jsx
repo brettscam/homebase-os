@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+// base44 LLM integration removed — AI chat will use a new backend
 import {
   getHomeData,
   getChatHistory,
@@ -290,9 +290,8 @@ export default function AskAI() {
         `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
       ).join('\n\n');
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `${homeContext}\n\nConversation so far:\n${historyPrompt}\n\nProvide a helpful, accurate answer based on the home data above. If doing calculations, show your math.`,
-      });
+      // AI backend temporarily unavailable during migration
+      const response = 'AI chat is being migrated to a new backend. This feature will be available again soon.';
 
       const assistantMessage = { role: 'assistant', content: response, timestamp: new Date().toISOString() };
       const updatedMessages = [...newMessages, assistantMessage];

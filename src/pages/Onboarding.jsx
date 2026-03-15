@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { base44 } from '@/api/base44Client';
 import {
   Home, ChevronRight, ChevronLeft, Check, Plus, X, Trash2,
   Building2, Layers, Search, MapPin,
@@ -17,6 +16,14 @@ import { toast } from 'sonner';
 import {
   getHomeData, saveHomeData, generateId, calculateCompletion
 } from '../lib/homeDataStore';
+import { useAuth } from '@/lib/AuthContext';
+import { useProperty } from '@/lib/PropertyContext';
+import {
+  createProperty, updateProperty,
+  upsertRoom, upsertAppliance, upsertSystem,
+  upsertPaintRecord, upsertSmartHome, upsertEmergencyInfo,
+  upsertExterior, upsertUtility,
+} from '../lib/supabaseDataStore';
 
 // ─── Step Progress Bar ───────────────────────────────────────────────
 const StepProgress = ({ currentStep, totalSteps, steps }) => (
@@ -183,36 +190,12 @@ const AddressLookupStep = ({ data, onChange }) => {
     setLookupLoading(true);
     try {
       const fullAddress = `${p.address}, ${p.city}, ${p.state} ${p.zip}`.trim();
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a property data assistant. Given this property address, provide realistic property details that would typically be available from public records, tax assessor data, and MLS listings.
-
-Address: ${fullAddress}
-
-Return ONLY valid JSON in this exact format (use empty string if unknown, do not fabricate specific serial numbers or model numbers):
-{
-  "property": {
-    "yearBuilt": "",
-    "sqft": "",
-    "lotSize": "",
-    "stories": "",
-    "bedrooms": "",
-    "bathrooms": ""
-  },
-  "rooms": [],
-  "systems": {
-    "hvac": { "type": "" },
-    "waterHeater": { "type": "" },
-    "electrical": { "amperage": "" }
-  },
-  "exterior": {
-    "roof": { "type": "", "material": "" },
-    "siding": { "material": "" }
-  },
-  "taxAssessorNotes": "Any relevant notes about what public records typically show for this type of property"
-}
-
-If you can reasonably infer details based on the address location, year, and typical construction for the area, include them. Otherwise leave empty. Return ONLY JSON.`
-      });
+      // AI property lookup is temporarily disabled while migrating backends.
+      // For now, skip to manual entry.
+      toast.info('Auto-lookup coming soon — please enter details manually for now.');
+      setLookupLoading(false);
+      return;
+      const response = '';
 
       try {
         const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -434,57 +417,11 @@ const DocumentUploadStep = ({ data, onChange }) => {
         return `--- ${doc.label} ---\n${text}`;
       }).join('\n\n');
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a home data extraction expert. I'm giving you text from one or more home documents (appraisals, disclosures, inspection reports, MLS listings).
-
-Extract ALL structured home data and return it in this exact JSON format. Be thorough — pull out every detail you can find. Use empty strings for data not found. Do NOT fabricate data.
-
-{
-  "property": {
-    "address": "", "city": "", "state": "", "zip": "",
-    "yearBuilt": "", "sqft": "", "lotSize": "", "stories": "",
-    "bedrooms": "", "bathrooms": ""
-  },
-  "rooms": [
-    { "name": "", "type": "kitchen|living|bedroom|bathroom|dining|office|garage|laundry|other", "length": "", "width": "", "sqft": "", "flooring": "", "ceilingHeight": "", "level": "main|upper|lower|basement", "notes": "" }
-  ],
-  "appliances": [
-    { "type": "", "brand": "", "model": "", "serialNumber": "", "installDate": "", "room": "", "notes": "" }
-  ],
-  "systems": {
-    "hvac": { "brand": "", "model": "", "type": "", "installDate": "", "filterSize": "", "thermostat": "" },
-    "waterHeater": { "brand": "", "model": "", "capacity": "", "type": "", "installDate": "" },
-    "electrical": { "amperage": "", "circuits": "", "panelLocation": "" },
-    "plumbing": { "mainShutoffLocation": "", "mainShutoffInstructions": "" }
-  },
-  "exterior": {
-    "roof": { "type": "", "material": "", "installDate": "" },
-    "gutters": { "type": "", "material": "" },
-    "siding": { "material": "" }
-  },
-  "emergency": {
-    "waterShutoff": { "location": "", "instructions": "" },
-    "gasShutoff": { "location": "", "instructions": "" },
-    "electricalPanel": { "location": "", "instructions": "" }
-  },
-  "paint": [
-    { "room": "", "brand": "", "colorName": "", "colorCode": "", "finish": "", "notes": "" }
-  ],
-  "notes": "Any other important details found across the documents"
-}
-
-IMPORTANT EXTRACTION TIPS:
-- For appraisals: Look carefully for GLA/Gross Living Area (this is the sqft), room counts, room dimensions, and the sketch/diagram section which describes the floor layout.
-- Extract EVERY room with dimensions you can find (length × width). Appraisals often list rooms in a grid or sketch.
-- For sqft: Look for "GLA", "Gross Living Area", "Living Area", "Total Sq Ft", "Above Grade", or similar fields.
-- For layout: Note which floor/level each room is on (main, upper, lower, basement).
-
-Return ONLY the JSON, no markdown or explanation.
-
-Here are the documents:
-
-${combinedText.slice(0, 30000)}`
-      });
+      // AI document extraction is temporarily disabled while migrating backends.
+      toast.info('AI document extraction coming soon — data has been saved as-is for now.');
+      setProcessingAll(false);
+      return;
+      const response = '';
 
       try {
         const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -1211,9 +1148,12 @@ const STEPS = [
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0);
   const [homeData, setHomeData] = useState(() => getHomeData());
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { refreshProperties } = useProperty();
 
-  // Auto-save on data changes
+  // Auto-save to localStorage as a draft (fast, no network)
   useEffect(() => {
     if (currentStep > 0) {
       saveHomeData(homeData);
@@ -1234,11 +1174,120 @@ export default function Onboarding() {
     }
   };
 
-  const finishOnboarding = () => {
-    const updated = { ...homeData, onboardingComplete: true };
-    saveHomeData(updated);
-    navigate(createPageUrl('HomeBase'));
-    toast.success('Home profile saved! Welcome to HomeBase.');
+  const finishOnboarding = async () => {
+    setSaving(true);
+    try {
+      // 1. Save to localStorage as fallback
+      const updated = { ...homeData, onboardingComplete: true };
+      saveHomeData(updated);
+
+      // 2. Persist to Supabase if authenticated
+      if (user) {
+        const p = homeData.property || {};
+        const property = await createProperty(user.id, {
+          name: p.address ? p.address.split(',')[0] : 'My Home',
+          address: p.address || '',
+          city: p.city || '',
+          state: p.state || '',
+          zip: p.zip || '',
+          year_built: p.yearBuilt || '',
+          sqft: p.sqft || '',
+          lot_size: p.lotSize || '',
+          stories: p.stories || '',
+          bedrooms: p.bedrooms || '',
+          bathrooms: p.bathrooms || '',
+          onboarding_complete: true,
+        });
+
+        const propertyId = property.id;
+
+        // Save rooms
+        if (homeData.rooms?.length) {
+          await Promise.all(homeData.rooms.map(r =>
+            upsertRoom({
+              property_id: propertyId,
+              name: r.name || r.type || 'Room',
+              type: r.type || '',
+              floor: r.level || r.floor || '',
+              sqft: r.sqft || '',
+              dimensions: r.length && r.width ? `${r.length}x${r.width}` : '',
+              notes: r.notes || '',
+            })
+          ));
+        }
+
+        // Save appliances
+        if (homeData.appliances?.length) {
+          await Promise.all(homeData.appliances.map(a =>
+            upsertAppliance({
+              property_id: propertyId,
+              name: a.type || a.name || 'Appliance',
+              type: a.type || '',
+              brand: a.brand || '',
+              model: a.model || '',
+              serial_number: a.serialNumber || '',
+              install_date: a.installDate || '',
+              notes: a.notes || '',
+            })
+          ));
+        }
+
+        // Save systems
+        if (homeData.systems) {
+          const systemEntries = [
+            { type: 'hvac', data: homeData.systems.hvac },
+            { type: 'water_heater', data: homeData.systems.waterHeater },
+            { type: 'electrical', data: homeData.systems.electrical },
+            { type: 'plumbing', data: homeData.systems.plumbing },
+          ].filter(s => s.data && Object.values(s.data).some(Boolean));
+
+          await Promise.all(systemEntries.map(s =>
+            upsertSystem({ property_id: propertyId, type: s.type, data: s.data })
+          ));
+        }
+
+        // Save exterior
+        if (homeData.exterior) {
+          const extEntries = [
+            { type: 'roof', data: homeData.exterior.roof },
+            { type: 'gutters', data: homeData.exterior.gutters },
+            { type: 'siding', data: homeData.exterior.siding },
+          ].filter(e => e.data && Object.values(e.data).some(Boolean));
+
+          await Promise.all(extEntries.map(e =>
+            upsertExterior({ property_id: propertyId, type: e.type, data: e.data })
+          ));
+        }
+
+        // Save paint records
+        if (homeData.paint?.length) {
+          await Promise.all(homeData.paint.map(p =>
+            upsertPaintRecord({
+              property_id: propertyId,
+              room_name: p.room || '',
+              color_name: p.colorName || '',
+              color_hex: p.colorCode || '',
+              brand: p.brand || '',
+              finish: p.finish || '',
+              notes: p.notes || '',
+            })
+          ));
+        }
+
+        // Refresh property context so dashboard picks it up
+        await refreshProperties();
+      }
+
+      navigate(createPageUrl('HomeBase'));
+      toast.success('Home profile saved! Welcome to HomeBase.');
+    } catch (err) {
+      console.error('Failed to save to Supabase:', err);
+      // Still navigate — localStorage backup exists
+      navigate(createPageUrl('HomeBase'));
+      toast.success('Home profile saved locally. Cloud sync will retry.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const isLastStep = currentStep === STEPS.length - 1;
@@ -1302,13 +1351,19 @@ export default function Onboarding() {
               )}
               <button
                 onClick={isLastStep ? finishOnboarding : goNext}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+                disabled={saving}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50 ${
                   isLastStep
                     ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg'
                     : 'bg-blue-600 hover:bg-blue-700 text-white'
                 }`}
               >
-                {isLastStep ? (
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : isLastStep ? (
                   <>
                     Go to HomeBase
                     <Home className="w-4 h-4" />

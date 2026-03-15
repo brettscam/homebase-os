@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+// base44 LLM integration removed — AI features will use a new backend
 import {
   Plus, X, ChevronRight, ChevronDown, ChevronUp,
   AlertTriangle, CheckCircle2, Clock, Calendar,
@@ -149,21 +149,9 @@ const AISuggestionBanner = ({ components, onAddSuggested }) => {
         return `${c.name}: installed ${c.installYear}, ${remaining !== null ? remaining + ' years remaining' : 'unknown age'}, est. cost $${c.estimatedCost || '?'}`;
       }).join('\n');
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a home maintenance advisor. Based on these home components and their lifespans, suggest the top 3 priority projects the homeowner should plan for. Consider urgency, cost, and impact.
-
-Home: ${homeData.property?.address || 'Unknown'}, built ${homeData.property?.yearBuilt || 'unknown'}
-Components:
-${componentSummary}
-
-Return ONLY valid JSON array:
-[
-  { "title": "Project name", "reason": "Why this is priority", "timeframe": "When to do it", "estimatedCost": "$X,XXX - $X,XXX", "urgency": "high|medium|low" }
-]`
-      });
-
-      const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      setSuggestions(JSON.parse(cleaned));
+      // AI suggestions temporarily disabled during backend migration
+      toast.info('AI suggestions coming soon.');
+      setSuggestions([]);
     } catch {
       toast.error('Could not generate suggestions');
     } finally {

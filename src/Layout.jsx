@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPageUrl } from './utils';
-import { getHomeData } from './lib/homeDataStore';
+import { useProperty } from './lib/PropertyContext';
+import { useAuth } from './lib/AuthContext';
 import {
   Home,
   MessageCircle,
@@ -14,11 +15,14 @@ import {
   Plus,
   Check,
   Users,
-  Settings
+  Settings,
+  TrendingUp,
+  Plug,
+  LogOut
 } from 'lucide-react';
 
 // Property Selector Dropdown
-const PropertySelector = ({ currentProperty, allProperties }) => {
+const PropertySelector = ({ currentProperty, allProperties, onSwitch }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -30,12 +34,12 @@ const PropertySelector = ({ currentProperty, allProperties }) => {
         <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
           <Building2 className="w-4 h-4 text-white" />
         </div>
-        <div className="text-left">
+        <div className="text-left hidden sm:block">
           <p className="text-sm font-semibold text-gray-900 leading-tight">
-            {currentProperty.name || 'My Home'}
+            {currentProperty?.name || 'My Home'}
           </p>
           <p className="text-xs text-gray-500 leading-tight">
-            {currentProperty.address || 'Add address in setup'}
+            {currentProperty?.address || 'Complete setup'}
           </p>
         </div>
         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -51,39 +55,44 @@ const PropertySelector = ({ currentProperty, allProperties }) => {
               exit={{ opacity: 0, y: -5 }}
               className="absolute top-full left-0 mt-1 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden"
             >
-              {allProperties.map((prop, i) => (
+              {allProperties.map((prop) => (
                 <button
-                  key={i}
-                  onClick={() => setIsOpen(false)}
+                  key={prop.id || prop.address}
+                  onClick={() => {
+                    if (prop.id && onSwitch) onSwitch(prop.id);
+                    setIsOpen(false);
+                  }}
                   className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left ${
-                    prop.address === currentProperty.address ? 'bg-blue-50' : ''
+                    prop.id === currentProperty?.id ? 'bg-blue-50' : ''
                   }`}
                 >
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    prop.address === currentProperty.address
-                      ? 'bg-blue-600'
-                      : 'bg-gray-200'
+                    prop.id === currentProperty?.id ? 'bg-blue-600' : 'bg-gray-200'
                   }`}>
                     <Building2 className={`w-4 h-4 ${
-                      prop.address === currentProperty.address ? 'text-white' : 'text-gray-500'
+                      prop.id === currentProperty?.id ? 'text-white' : 'text-gray-500'
                     }`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{prop.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{prop.address}</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{prop.name || 'My Home'}</p>
+                    <p className="text-xs text-gray-500 truncate">{prop.address || 'No address'}</p>
                   </div>
-                  {prop.address === currentProperty.address && (
+                  {prop.id === currentProperty?.id && (
                     <Check className="w-4 h-4 text-blue-600" />
                   )}
                 </button>
               ))}
               <div className="border-t border-gray-100">
-                <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-500">
+                <Link
+                  to={createPageUrl('Onboarding')}
+                  onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-500"
+                >
                   <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                     <Plus className="w-4 h-4" />
                   </div>
                   <span className="text-sm font-medium">Add Property</span>
-                </button>
+                </Link>
               </div>
             </motion.div>
           </>
@@ -95,18 +104,17 @@ const PropertySelector = ({ currentProperty, allProperties }) => {
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
-  const homeData = getHomeData();
+  const { activeProperty, allProperties, switchProperty } = useProperty();
+  const { logout, user } = useAuth();
 
-  const currentProperty = {
-    name: homeData.property?.address
-      ? `${homeData.property.address.split(',')[0]}`
-      : 'My Home',
-    address: homeData.property?.address
-      ? `${homeData.property.address}, ${homeData.property.city || ''} ${homeData.property.state || ''}`
-      : 'Set up your property',
-  };
-
-  const allProperties = [currentProperty];
+  const currentProperty = activeProperty
+    ? {
+        ...activeProperty,
+        name: activeProperty.address
+          ? activeProperty.address.split(',')[0]
+          : activeProperty.name || 'My Home',
+      }
+    : { name: 'My Home', address: 'Complete setup' };
 
   // Determine which page is active
   const pathName = location.pathname.replace('/', '') || 'HomeBase';
@@ -119,8 +127,10 @@ export default function Layout({ children, currentPageName }) {
   const navItems = [
     { id: 'HomeBase', icon: Home, label: 'Home' },
     { id: 'HomeBaseManual', icon: Book, label: 'Manual' },
-    { id: 'ContactsAccounts', icon: Users, label: 'Contacts' },
     { id: 'Projects', icon: Wrench, label: 'Projects' },
+    { id: 'Insights', icon: TrendingUp, label: 'Insights' },
+    { id: 'Integrations', icon: Plug, label: 'Integrations' },
+    { id: 'ContactsAccounts', icon: Users, label: 'Contacts' },
   ];
 
   return (
@@ -132,22 +142,23 @@ export default function Layout({ children, currentPageName }) {
           <PropertySelector
             currentProperty={currentProperty}
             allProperties={allProperties}
+            onSwitch={switchProperty}
           />
 
           {/* Center: Navigation Tabs */}
-          <nav className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+          <nav className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1 overflow-x-auto">
             {navItems.map((item) => (
               <Link
                 key={item.id}
                 to={createPageUrl(item.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   pathName === item.id
                     ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 <item.icon className="w-4 h-4" strokeWidth={1.5} />
-                <span>{item.label}</span>
+                <span className="hidden md:inline">{item.label}</span>
               </Link>
             ))}
           </nav>
@@ -156,7 +167,7 @@ export default function Layout({ children, currentPageName }) {
           <div className="flex items-center gap-2">
             <Link
               to={createPageUrl('AskAI')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                 pathName === 'AskAI'
                   ? 'bg-blue-600 text-white'
                   : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
@@ -176,6 +187,15 @@ export default function Layout({ children, currentPageName }) {
             >
               <Settings className="w-5 h-5" strokeWidth={1.5} />
             </Link>
+            {user && (
+              <button
+                onClick={() => logout()}
+                className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+                title="Sign out"
+              >
+                <LogOut className="w-5 h-5" strokeWidth={1.5} />
+              </button>
+            )}
           </div>
         </div>
       </header>
