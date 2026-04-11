@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import { supabase } from './supabase';
 import { getUserProperties, loadFullHomeData } from './supabaseDataStore';
 
 const PropertyContext = createContext();
@@ -12,6 +11,7 @@ export const PropertyProvider = ({ children }) => {
   const [homeData, setHomeData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const loadAttempt = useRef(0);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -20,26 +20,19 @@ export const PropertyProvider = ({ children }) => {
     }
 
     let cancelled = false;
+    const attempt = ++loadAttempt.current;
+
+    // Safety timeout — never hang on "Loading your home..." forever
+    const timeout = setTimeout(() => {
+      if (!cancelled && loadAttempt.current === attempt) {
+        console.error('[PropertyContext] Loading timed out after 20s');
+        setError('Loading timed out. Please check your connection and try again.');
+        setIsLoading(false);
+      }
+    }, 20000);
 
     const load = async () => {
       try {
-        // Step 1: Test raw database connectivity first
-        console.log('[PropertyContext] Testing database connection...');
-        const testStart = Date.now();
-        const { data: testData, error: testError } = await supabase
-          .from('properties')
-          .select('id')
-          .limit(1);
-        console.log('[PropertyContext] DB test completed in', Date.now() - testStart, 'ms',
-          'error:', testError, 'rows:', testData?.length);
-
-        if (cancelled) return;
-
-        if (testError) {
-          throw new Error(`Database error: ${testError.message} (code: ${testError.code})`);
-        }
-
-        // Step 2: Load user's properties
         console.log('[PropertyContext] Loading properties for user:', user.id);
         const properties = await getUserProperties(user.id);
         if (cancelled) return;
@@ -62,13 +55,17 @@ export const PropertyProvider = ({ children }) => {
         console.error('[PropertyContext] Error:', err);
         setError(err.message || 'Failed to load properties');
       } finally {
+        clearTimeout(timeout);
         if (!cancelled) setIsLoading(false);
       }
     };
 
     load();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, [isAuthenticated, user?.id]);
 
   const refreshProperties = useCallback(async () => {

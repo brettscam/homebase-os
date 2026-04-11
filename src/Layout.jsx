@@ -136,8 +136,8 @@ export default function Layout({ children, currentPageName }) {
         <div className="flex items-center justify-between px-4 h-14">
           {/* Left: Logo + Property */}
           <div className="flex items-center gap-1">
-            <Link to="/" className="text-hb-teal mr-1">
-              <HomeBaseLogo size={28} animate={false} />
+            <Link to="/" className="text-hb-teal mr-1 flex items-center">
+              <HomeBaseLogo size={32} animate={false} />
             </Link>
             <PropertySelector
               currentProperty={currentProperty}

@@ -10,8 +10,7 @@ import { PropertyProvider, useProperty } from '@/lib/PropertyContext';
 import Login from '@/pages/Login';
 import Onboarding from '@/pages/Onboarding';
 import { HomeBaseLoader } from '@/components/HomeBaseLogo';
-import { supabase } from '@/lib/supabase';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -41,76 +40,22 @@ const AuthenticatedApp = () => {
   );
 };
 
-// Live diagnostic — runs independent checks and shows results on screen
-const DiagnosticPanel = () => {
-  const { user } = useAuth();
-  const [checks, setChecks] = useState({});
-
-  useEffect(() => {
-    if (!user) return;
-    const run = async () => {
-      // Check 1: Auth session
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        setChecks(c => ({ ...c, session: error ? `ERR: ${error.message}` : session ? `OK (token: ${session.access_token?.substring(0, 20)}...)` : 'NO SESSION' }));
-      } catch (e) {
-        setChecks(c => ({ ...c, session: `EXCEPTION: ${e.message}` }));
-      }
-
-      // Check 2: Raw fetch to REST API (bypass supabase-js)
-      try {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/properties?select=id&limit=1`;
-        const { data: { session } } = await supabase.auth.getSession();
-        setChecks(c => ({ ...c, rawFetch: 'FETCHING...' }));
-        const resp = await fetch(url, {
-          headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-        });
-        const body = await resp.text();
-        setChecks(c => ({ ...c, rawFetch: `HTTP ${resp.status}: ${body.substring(0, 200)}` }));
-      } catch (e) {
-        setChecks(c => ({ ...c, rawFetch: `EXCEPTION: ${e.message}` }));
-      }
-
-      // Check 3: supabase-js query
-      try {
-        setChecks(c => ({ ...c, jsQuery: 'QUERYING...' }));
-        const start = Date.now();
-        const { data, error } = await supabase.from('properties').select('id').limit(1);
-        const ms = Date.now() - start;
-        setChecks(c => ({ ...c, jsQuery: error ? `ERR in ${ms}ms: ${error.message} (${error.code})` : `OK in ${ms}ms: ${JSON.stringify(data)}` }));
-      } catch (e) {
-        setChecks(c => ({ ...c, jsQuery: `EXCEPTION: ${e.message}` }));
-      }
-
-      // Check 4: User's properties
-      try {
-        setChecks(c => ({ ...c, userProps: 'QUERYING...' }));
-        const { data, error } = await supabase.from('properties').select('id, name, address').eq('user_id', user.id);
-        setChecks(c => ({ ...c, userProps: error ? `ERR: ${error.message}` : `${data?.length || 0} properties: ${JSON.stringify(data)}` }));
-      } catch (e) {
-        setChecks(c => ({ ...c, userProps: `EXCEPTION: ${e.message}` }));
-      }
-    };
-    run();
-  }, [user]);
-
+const ErrorScreen = ({ error, onRetry }) => {
   return (
-    <div className="min-h-screen bg-hb-warm p-6">
-      <div className="max-w-lg mx-auto">
-        <h2 className="text-lg font-bold text-hb-navy mb-1">Homebase Diagnostic</h2>
-        <p className="text-xs text-gray-400 mb-4">User: {user?.id} | {user?.email}</p>
-        {Object.entries(checks).map(([key, val]) => (
-          <div key={key} className="bg-white rounded-lg p-3 mb-2 border border-gray-100">
-            <p className="text-xs font-semibold text-gray-600 uppercase">{key}</p>
-            <p className="text-xs text-gray-800 mt-1 break-all font-mono">{val || '...'}</p>
-          </div>
-        ))}
-        {Object.keys(checks).length === 0 && <p className="text-sm text-gray-400">Running checks...</p>}
-        <button onClick={() => window.location.reload()} className="mt-4 px-6 py-3 bg-hb-teal text-white rounded-xl font-medium w-full">
-          Refresh
+    <div className="min-h-screen bg-hb-warm flex items-center justify-center p-6">
+      <div className="max-w-sm mx-auto text-center">
+        <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+        </div>
+        <h2 className="text-lg font-semibold text-hb-navy mb-2">Something went wrong</h2>
+        <p className="text-sm text-hb-slate mb-6">{error}</p>
+        <button
+          onClick={onRetry}
+          className="px-6 py-3 bg-hb-teal text-white rounded-xl font-medium w-full hover:bg-hb-teal-600 transition-colors"
+        >
+          Try Again
         </button>
       </div>
     </div>
@@ -118,14 +63,14 @@ const DiagnosticPanel = () => {
 };
 
 const PropertyGate = () => {
-  const { allProperties, isLoading, error } = useProperty();
+  const { allProperties, isLoading, error, refreshProperties } = useProperty();
 
   if (isLoading) {
     return <HomeBaseLoader message="Loading your home..." />;
   }
 
   if (error) {
-    return <DiagnosticPanel />;
+    return <ErrorScreen error={error} onRetry={refreshProperties} />;
   }
 
   // New user with no properties → go straight to onboarding
