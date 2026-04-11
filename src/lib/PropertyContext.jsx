@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import { getActiveProperty, getUserProperties, loadFullHomeData } from './supabaseDataStore';
+import { getUserProperties, loadFullHomeData } from './supabaseDataStore';
 
 const PropertyContext = createContext();
 
@@ -10,6 +10,15 @@ export const PropertyProvider = ({ children }) => {
   const [allProperties, setAllProperties] = useState([]);
   const [homeData, setHomeData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const resolved = useRef(false);
+
+  const resolveLoading = () => {
+    if (!resolved.current) {
+      resolved.current = true;
+      setIsLoading(false);
+    }
+  };
 
   const refreshProperties = useCallback(async () => {
     if (!user) {
@@ -22,6 +31,9 @@ export const PropertyProvider = ({ children }) => {
 
     try {
       setIsLoading(true);
+      resolved.current = false;
+      setError(null);
+
       const properties = await getUserProperties(user.id);
       setAllProperties(properties);
 
@@ -36,14 +48,26 @@ export const PropertyProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('Failed to load properties:', err);
+      setError(err.message || 'Failed to load properties');
     } finally {
-      setIsLoading(false);
+      resolveLoading();
     }
   }, [user]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
+      // Safety timeout — never stay on loading screen forever
+      const timeout = setTimeout(() => {
+        if (!resolved.current) {
+          console.warn('Property loading timed out after 12s');
+          setError('Loading timed out. Please refresh the page.');
+          resolveLoading();
+        }
+      }, 12000);
+
       refreshProperties();
+
+      return () => clearTimeout(timeout);
     } else {
       setActiveProperty(null);
       setAllProperties([]);
@@ -57,13 +81,15 @@ export const PropertyProvider = ({ children }) => {
     if (!prop) return;
     setActiveProperty(prop);
     setIsLoading(true);
+    resolved.current = false;
     try {
       const data = await loadFullHomeData(prop.id);
       setHomeData(data);
     } catch (err) {
       console.error('Failed to load property data:', err);
+      setError(err.message || 'Failed to load property data');
     } finally {
-      setIsLoading(false);
+      resolveLoading();
     }
   }, [allProperties]);
 
@@ -73,6 +99,7 @@ export const PropertyProvider = ({ children }) => {
       allProperties,
       homeData,
       isLoading,
+      error,
       refreshProperties,
       switchProperty,
     }}>

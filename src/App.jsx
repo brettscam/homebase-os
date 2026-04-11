@@ -40,10 +40,30 @@ const AuthenticatedApp = () => {
 };
 
 const PropertyGate = () => {
-  const { allProperties, isLoading } = useProperty();
+  const { allProperties, isLoading, error } = useProperty();
 
   if (isLoading) {
     return <HomeBaseLoader message="Loading your home..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-hb-warm flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">!</span>
+          </div>
+          <h2 className="text-lg font-semibold text-hb-navy mb-2">Something went wrong</h2>
+          <p className="text-sm text-gray-500 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-hb-teal text-white rounded-xl font-medium hover:bg-hb-teal-700 transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // New user with no properties → go straight to onboarding

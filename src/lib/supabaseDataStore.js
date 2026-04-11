@@ -454,21 +454,12 @@ export async function deleteChatConversation(convoId) {
 // Loads all data for a property in one call (for dashboard, etc.)
 
 export async function loadFullHomeData(propertyId) {
-  const [
-    rooms,
-    appliances,
-    systems,
-    paintRecords,
-    smartHome,
-    emergencyInfo,
-    exterior,
-    contacts,
-    utilities,
-    documents,
-    energyBills,
-    projects,
-    integrations,
-  ] = await Promise.all([
+  const keys = [
+    'rooms', 'appliances', 'systems', 'paintRecords', 'smartHome',
+    'emergencyInfo', 'exterior', 'contacts', 'utilities', 'documents',
+    'energyBills', 'projects', 'integrations',
+  ];
+  const fetchers = [
     getRooms(propertyId),
     getAppliances(propertyId),
     getSystems(propertyId),
@@ -482,23 +473,19 @@ export async function loadFullHomeData(propertyId) {
     getEnergyBills(propertyId),
     getProjects(propertyId),
     getIntegrations(propertyId),
-  ]);
+  ];
 
-  return {
-    rooms,
-    appliances,
-    systems,
-    paintRecords,
-    smartHome,
-    emergencyInfo,
-    exterior,
-    contacts,
-    utilities,
-    documents,
-    energyBills,
-    projects,
-    integrations,
-  };
+  const results = await Promise.allSettled(fetchers);
+  const data = {};
+  results.forEach((result, i) => {
+    if (result.status === 'fulfilled') {
+      data[keys[i]] = result.value;
+    } else {
+      console.warn(`Failed to load ${keys[i]}:`, result.reason?.message || result.reason);
+      data[keys[i]] = Array.isArray(result.value) ? [] : null;
+    }
+  });
+  return data;
 }
 
 // ─── Compatibility Layer ────────────────────────────────────
