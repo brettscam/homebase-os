@@ -336,7 +336,7 @@ export default function AskAI() {
             <div className="p-4 border-b border-gray-100">
               <button
                 onClick={handleNewChat}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-hb-teal text-white rounded-xl text-sm font-medium hover:bg-hb-teal-600 transition-all shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 New Chat
@@ -359,12 +359,12 @@ export default function AskAI() {
                       onClick={() => handleSelectConvo(convo)}
                       className={`group flex items-center gap-3 px-4 py-3 cursor-pointer transition-all ${
                         activeConvoId === convo.id
-                          ? 'bg-blue-50 border-r-2 border-blue-600'
+                          ? 'bg-hb-teal-50 border-r-2 border-hb-teal'
                           : 'hover:bg-gray-50'
                       }`}
                     >
                       <MessageSquare className={`w-4 h-4 flex-shrink-0 ${
-                        activeConvoId === convo.id ? 'text-blue-600' : 'text-gray-400'
+                        activeConvoId === convo.id ? 'text-hb-teal' : 'text-gray-400'
                       }`} />
                       <div className="flex-1 min-w-0">
                         {editingTitle === convo.id ? (
@@ -455,7 +455,7 @@ export default function AskAI() {
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                   <Sparkles className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Ask HomeBase AI</h2>
+                <h2 className="text-xl font-semibold text-hb-navy mb-2">Ask Homer</h2>
                 <p className="text-gray-500 text-sm max-w-md mx-auto">
                   I know your home inside and out — room dimensions, paint colors, appliance specs, utility accounts, and more. Ask me anything.
                 </p>
@@ -496,7 +496,7 @@ export default function AskAI() {
                     )}
                     <div className={`${
                       message.role === 'user'
-                        ? 'bg-blue-600 text-white rounded-2xl rounded-br-md px-5 py-3'
+                        ? 'bg-hb-teal text-white rounded-2xl rounded-br-md px-5 py-3'
                         : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-bl-md px-5 py-4 shadow-sm'
                     }`}>
                       <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
@@ -523,7 +523,7 @@ export default function AskAI() {
                     </div>
                     <div className="bg-white border border-gray-200 px-5 py-4 rounded-2xl rounded-bl-md shadow-sm">
                       <div className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                        <Loader2 className="w-4 h-4 text-hb-teal animate-spin" />
                         <span className="text-sm text-gray-400">Thinking...</span>
                       </div>
                     </div>
@@ -557,7 +557,7 @@ export default function AskAI() {
               <button
                 onClick={() => handleSendMessage()}
                 disabled={isLoading || !inputValue.trim()}
-                className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center disabled:opacity-40 hover:bg-blue-700 transition-colors flex-shrink-0"
+                className="w-9 h-9 bg-hb-teal rounded-xl flex items-center justify-center disabled:opacity-40 hover:bg-hb-teal-600 transition-colors flex-shrink-0"
               >
                 <Send className="w-4 h-4 text-white" />
               </button>

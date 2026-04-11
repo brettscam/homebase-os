@@ -4,13 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createPageUrl } from './utils';
 import { useProperty } from './lib/PropertyContext';
 import { useAuth } from './lib/AuthContext';
+import { HomeBaseLogo } from './components/HomeBaseLogo';
 import {
   Home,
   MessageCircle,
   Wrench,
   Book,
   ChevronDown,
-  Sparkles,
   Building2,
   Plus,
   Check,
@@ -21,7 +21,6 @@ import {
   LogOut
 } from 'lucide-react';
 
-// Property Selector Dropdown
 const PropertySelector = ({ currentProperty, allProperties, onSwitch }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -29,20 +28,20 @@ const PropertySelector = ({ currentProperty, allProperties, onSwitch }) => {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+        className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/60 transition-colors"
       >
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-          <Building2 className="w-4 h-4 text-white" />
+        <div className="w-8 h-8 bg-hb-teal rounded-lg flex items-center justify-center">
+          <Building2 className="w-4 h-4 text-white" strokeWidth={1.5} />
         </div>
         <div className="text-left hidden sm:block">
-          <p className="text-sm font-semibold text-gray-900 leading-tight">
+          <p className="text-sm font-semibold text-hb-navy leading-tight">
             {currentProperty?.name || 'My Home'}
           </p>
-          <p className="text-xs text-gray-500 leading-tight">
-            {currentProperty?.address || 'Complete setup'}
+          <p className="text-xs text-hb-slate leading-tight">
+            {currentProperty?.address || 'Set up your property'}
           </p>
         </div>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-hb-slate transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       <AnimatePresence>
@@ -62,23 +61,23 @@ const PropertySelector = ({ currentProperty, allProperties, onSwitch }) => {
                     if (prop.id && onSwitch) onSwitch(prop.id);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left ${
-                    prop.id === currentProperty?.id ? 'bg-blue-50' : ''
+                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-hb-teal-50 transition-colors text-left ${
+                    prop.id === currentProperty?.id ? 'bg-hb-teal-50' : ''
                   }`}
                 >
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    prop.id === currentProperty?.id ? 'bg-blue-600' : 'bg-gray-200'
+                    prop.id === currentProperty?.id ? 'bg-hb-teal' : 'bg-gray-200'
                   }`}>
                     <Building2 className={`w-4 h-4 ${
                       prop.id === currentProperty?.id ? 'text-white' : 'text-gray-500'
-                    }`} />
+                    }`} strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{prop.name || 'My Home'}</p>
-                    <p className="text-xs text-gray-500 truncate">{prop.address || 'No address'}</p>
+                    <p className="text-sm font-medium text-hb-navy truncate">{prop.name || 'My Home'}</p>
+                    <p className="text-xs text-hb-slate truncate">{prop.address || 'No address'}</p>
                   </div>
                   {prop.id === currentProperty?.id && (
-                    <Check className="w-4 h-4 text-blue-600" />
+                    <Check className="w-4 h-4 text-hb-teal" />
                   )}
                 </button>
               ))}
@@ -86,7 +85,7 @@ const PropertySelector = ({ currentProperty, allProperties, onSwitch }) => {
                 <Link
                   to={createPageUrl('Onboarding')}
                   onClick={() => setIsOpen(false)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-500"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-hb-teal-50 transition-colors text-hb-slate"
                 >
                   <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                     <Plus className="w-4 h-4" />
@@ -114,12 +113,10 @@ export default function Layout({ children, currentPageName }) {
           ? activeProperty.address.split(',')[0]
           : activeProperty.name || 'My Home',
       }
-    : { name: 'My Home', address: 'Complete setup' };
+    : { name: 'My Home', address: 'Set up your property' };
 
-  // Determine which page is active
   const pathName = location.pathname.replace('/', '') || 'HomeBase';
 
-  // Don't show layout on onboarding
   if (pathName === 'Onboarding') {
     return <>{children}</>;
   }
@@ -134,18 +131,22 @@ export default function Layout({ children, currentPageName }) {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F9F9F9]">
-      {/* Top Navigation Bar */}
+    <div className="min-h-screen bg-hb-warm">
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-100">
         <div className="flex items-center justify-between px-4 h-14">
-          {/* Left: Property Selector */}
-          <PropertySelector
-            currentProperty={currentProperty}
-            allProperties={allProperties}
-            onSwitch={switchProperty}
-          />
+          {/* Left: Logo + Property */}
+          <div className="flex items-center gap-1">
+            <Link to="/" className="text-hb-teal mr-1">
+              <HomeBaseLogo size={28} animate={false} />
+            </Link>
+            <PropertySelector
+              currentProperty={currentProperty}
+              allProperties={allProperties}
+              onSwitch={switchProperty}
+            />
+          </div>
 
-          {/* Center: Navigation Tabs */}
+          {/* Center: Nav */}
           <nav className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1 overflow-x-auto">
             {navItems.map((item) => (
               <Link
@@ -153,8 +154,8 @@ export default function Layout({ children, currentPageName }) {
                 to={createPageUrl(item.id)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   pathName === item.id
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-white text-hb-teal shadow-sm'
+                    : 'text-hb-slate hover:text-hb-navy'
                 }`}
               >
                 <item.icon className="w-4 h-4" strokeWidth={1.5} />
@@ -163,34 +164,34 @@ export default function Layout({ children, currentPageName }) {
             ))}
           </nav>
 
-          {/* Right: Quick Actions */}
-          <div className="flex items-center gap-2">
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1.5">
             <Link
               to={createPageUrl('AskAI')}
               className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                 pathName === 'AskAI'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                  ? 'bg-hb-teal text-white'
+                  : 'bg-hb-teal-50 text-hb-teal-600 hover:bg-hb-teal-100'
               }`}
             >
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
-              <span className="hidden sm:inline">Ask</span>
+              <span className="hidden sm:inline">Ask Homer</span>
             </Link>
             <Link
               to={createPageUrl('Admin')}
               className={`p-2 rounded-xl transition-all ${
                 pathName === 'Admin'
-                  ? 'bg-gray-200 text-gray-900'
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gray-200 text-hb-navy'
+                  : 'text-hb-slate hover:text-hb-navy hover:bg-gray-100'
               }`}
-              title="Admin"
+              title="Settings"
             >
               <Settings className="w-5 h-5" strokeWidth={1.5} />
             </Link>
             {user && (
               <button
                 onClick={() => logout()}
-                className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+                className="p-2 rounded-xl text-hb-slate hover:text-hb-navy hover:bg-gray-100 transition-all"
                 title="Sign out"
               >
                 <LogOut className="w-5 h-5" strokeWidth={1.5} />
@@ -200,19 +201,18 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="pt-14">
         {children}
       </main>
 
-      {/* Floating Ask AI Bubble - visible on non-AskAI pages */}
+      {/* Floating Ask Homer button */}
       {pathName !== 'AskAI' && (
         <Link
           to={createPageUrl('AskAI')}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all z-50"
-          title="Ask HomeBase AI"
+          className="fixed bottom-6 right-6 w-14 h-14 bg-hb-teal rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all z-50"
+          title="Ask Homer"
         >
-          <Sparkles className="w-6 h-6 text-white" />
+          <MessageCircle className="w-6 h-6 text-white" strokeWidth={1.5} />
         </Link>
       )}
     </div>

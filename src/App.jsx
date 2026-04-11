@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { PropertyProvider, useProperty } from '@/lib/PropertyContext';
 import Login from '@/pages/Login';
 import Onboarding from '@/pages/Onboarding';
+import { HomeBaseLoader } from '@/components/HomeBaseLogo';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -21,13 +22,8 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isAuthenticated } = useAuth();
 
-  // Show loading spinner while checking auth
   if (isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
+    return <HomeBaseLoader message="Checking your account..." />;
   }
 
   // Not logged in → show login page
@@ -47,11 +43,7 @@ const PropertyGate = () => {
   const { allProperties, isLoading } = useProperty();
 
   if (isLoading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
+    return <HomeBaseLoader message="Loading your home..." />;
   }
 
   // New user with no properties → go straight to onboarding

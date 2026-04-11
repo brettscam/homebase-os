@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
-import { Home, Mail, Lock, User, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { HomeBaseLogo } from '@/components/HomeBaseLogo';
+import { Mail, Lock, User, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 
 export default function Login() {
   const { signIn, signUp, signInWithMagicLink, signInWithGoogle } = useAuth();
@@ -51,7 +52,7 @@ export default function Login() {
           </p>
           <button
             onClick={() => { setMagicLinkSent(false); setMode('login'); }}
-            className="text-sm text-blue-600 hover:text-blue-700"
+            className="text-sm text-hb-teal hover:text-blue-700"
           >
             Back to login
           </button>
@@ -61,7 +62,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-hb-warm flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -69,11 +70,11 @@ export default function Login() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Home className="w-8 h-8 text-white" />
+          <div className="text-hb-teal mx-auto mb-4">
+            <HomeBaseLogo size={56} animate />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">HomeBase</h1>
-          <p className="text-gray-500 mt-1">Your home, organized and protected</p>
+          <h1 className="text-2xl font-bold text-hb-navy">HomeBase</h1>
+          <p className="text-hb-slate mt-1">Your home, organized and protected</p>
         </div>
 
         {/* Form */}
@@ -178,7 +179,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 bg-hb-teal text-white py-3 rounded-xl font-medium hover:bg-hb-teal-600 transition-colors disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -197,7 +198,7 @@ export default function Login() {
               <>
                 <button
                   onClick={() => { setMode('magic'); setError(''); }}
-                  className="text-sm text-blue-600 hover:text-blue-700 block w-full"
+                  className="text-sm text-hb-teal hover:text-blue-700 block w-full"
                 >
                   Sign in with magic link instead
                 </button>
@@ -205,7 +206,7 @@ export default function Login() {
                   Don't have an account?{' '}
                   <button
                     onClick={() => { setMode('signup'); setError(''); }}
-                    className="text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-hb-teal hover:text-blue-700 font-medium"
                   >
                     Sign up
                   </button>
@@ -217,7 +218,7 @@ export default function Login() {
                 Already have an account?{' '}
                 <button
                   onClick={() => { setMode('login'); setError(''); }}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-hb-teal hover:text-blue-700 font-medium"
                 >
                   Sign in
                 </button>
@@ -226,7 +227,7 @@ export default function Login() {
             {mode === 'magic' && (
               <button
                 onClick={() => { setMode('login'); setError(''); }}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                className="text-sm text-hb-teal hover:text-blue-700"
               >
                 Sign in with password instead
               </button>
