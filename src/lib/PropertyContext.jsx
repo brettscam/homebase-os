@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { getUserProperties, loadFullHomeData } from './supabaseDataStore';
 
@@ -11,9 +11,12 @@ export const PropertyProvider = ({ children }) => {
   const [homeData, setHomeData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  // True when the initial query succeeded at least once
+  const [hasLoaded, setHasLoaded] = useState(false);
+  // True when queries are still pending after the soft timeout
+  const [isConnecting, setIsConnecting] = useState(false);
+  const retryTimer = useRef(null);
 
-  // Step 1: Load properties ONLY — this is the fast gate.
-  // The UI unblocks as soon as this single query finishes.
   useEffect(() => {
     if (!isAuthenticated || !user) {
       setIsLoading(false);
@@ -21,61 +24,101 @@ export const PropertyProvider = ({ children }) => {
     }
 
     let cancelled = false;
+    let queryResolved = false;
 
-    const load = async () => {
+    const loadProperties = async () => {
       try {
         const properties = await getUserProperties(user.id);
         if (cancelled) return;
-
+        queryResolved = true;
+        setIsConnecting(false);
         setAllProperties(properties);
+        setHasLoaded(true);
 
         if (properties.length > 0) {
           const active = properties.find(p => p.is_active) || properties[0];
           setActiveProperty(active);
+          // Load full data in background — never blocks UI
+          loadFullHomeData(active.id)
+            .then((data) => { if (!cancelled) setHomeData(data); })
+            .catch(() => {});
         }
       } catch (err) {
         if (cancelled) return;
-        console.error('[PropertyContext] Failed to load properties:', err);
+        queryResolved = true;
+        console.error('[PropertyContext] Query failed:', err);
         setError(err.message || 'Failed to load properties');
       } finally {
         if (!cancelled) setIsLoading(false);
       }
     };
 
-    load();
-    return () => { cancelled = true; };
+    // Soft timeout: after 6 seconds, unblock the UI regardless.
+    // The query keeps running — if it returns later, the app updates.
+    const softTimeout = setTimeout(() => {
+      if (!cancelled && !queryResolved) {
+        console.warn('[PropertyContext] Soft timeout — unblocking UI, query still pending');
+        setIsLoading(false);
+        setIsConnecting(true);
+      }
+    }, 6000);
+
+    loadProperties();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(softTimeout);
+      clearTimeout(retryTimer.current);
+    };
   }, [isAuthenticated, user?.id]);
 
-  // Step 2: Once we have an active property, load full home data in the background.
-  // This does NOT block the UI — pages render immediately and get data when it arrives.
+  // Auto-retry when connecting (query didn't return in time)
   useEffect(() => {
-    if (!activeProperty?.id) return;
+    if (!isConnecting || !user?.id) return;
 
     let cancelled = false;
+    const retry = async () => {
+      try {
+        const properties = await getUserProperties(user.id);
+        if (cancelled) return;
+        setIsConnecting(false);
+        setAllProperties(properties);
+        setHasLoaded(true);
+        setError(null);
+        if (properties.length > 0) {
+          const active = properties.find(p => p.is_active) || properties[0];
+          setActiveProperty(active);
+          loadFullHomeData(active.id)
+            .then((data) => { if (!cancelled) setHomeData(data); })
+            .catch(() => {});
+        }
+      } catch {
+        // Schedule another retry in 10 seconds
+        if (!cancelled) {
+          retryTimer.current = setTimeout(retry, 10000);
+        }
+      }
+    };
 
-    loadFullHomeData(activeProperty.id)
-      .then((data) => {
-        if (!cancelled) setHomeData(data);
-      })
-      .catch((err) => {
-        console.warn('[PropertyContext] Background home data load failed:', err);
-        // Don't set error — the app is already usable, pages can load their own data
-      });
-
-    return () => { cancelled = true; };
-  }, [activeProperty?.id]);
+    retryTimer.current = setTimeout(retry, 8000);
+    return () => {
+      cancelled = true;
+      clearTimeout(retryTimer.current);
+    };
+  }, [isConnecting, user?.id]);
 
   const refreshProperties = useCallback(async () => {
     if (!user?.id) return;
     setIsLoading(true);
     setError(null);
+    setIsConnecting(false);
     try {
       const properties = await getUserProperties(user.id);
       setAllProperties(properties);
+      setHasLoaded(true);
       if (properties.length > 0) {
         const active = properties.find(p => p.is_active) || properties[0];
         setActiveProperty(active);
-        // Background load full data
         loadFullHomeData(active.id).then(setHomeData).catch(() => {});
       } else {
         setActiveProperty(null);
@@ -93,7 +136,6 @@ export const PropertyProvider = ({ children }) => {
     if (!prop) return;
     setActiveProperty(prop);
     setHomeData(null);
-    // Background load
     loadFullHomeData(prop.id).then(setHomeData).catch((err) => {
       console.warn('[PropertyContext] Failed to load property data:', err);
     });
@@ -106,6 +148,8 @@ export const PropertyProvider = ({ children }) => {
       homeData,
       isLoading,
       error,
+      hasLoaded,
+      isConnecting,
       refreshProperties,
       switchProperty,
     }}>

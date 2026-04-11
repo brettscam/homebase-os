@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { PropertyProvider, useProperty } from '@/lib/PropertyContext';
 import Login from '@/pages/Login';
 import Onboarding from '@/pages/Onboarding';
-import { HomeBaseLoader } from '@/components/HomeBaseLogo';
+import { HomeBaseLogo, HomeBaseLoader } from '@/components/HomeBaseLogo';
 import React from 'react';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -62,18 +62,49 @@ const ErrorScreen = ({ error, onRetry }) => {
   );
 };
 
-const PropertyGate = () => {
-  const { allProperties, isLoading, error, refreshProperties } = useProperty();
+const ConnectingScreen = ({ onRetry }) => (
+  <div className="min-h-screen bg-hb-warm flex items-center justify-center p-6">
+    <div className="max-w-sm mx-auto text-center">
+      <div className="text-hb-teal mb-6 flex justify-center">
+        <HomeBaseLogo size={64} animate />
+      </div>
+      <h2 className="text-lg font-semibold text-hb-navy mb-2">Connecting to your data...</h2>
+      <p className="text-sm text-hb-slate mb-2">This can take a moment on first load.</p>
+      <p className="text-xs text-hb-slate/60 mb-6">The database may be waking up. Retrying automatically.</p>
+      <div className="flex items-center justify-center gap-1.5 mb-6">
+        {[0, 1, 2].map((i) => (
+          <span key={i} className="block w-1.5 h-1.5 rounded-full bg-hb-teal/40 animate-pulse" style={{ animationDelay: `${i * 200}ms` }} />
+        ))}
+      </div>
+      <button
+        onClick={onRetry}
+        className="px-6 py-3 bg-hb-teal text-white rounded-xl font-medium w-full hover:bg-hb-teal-600 transition-colors"
+      >
+        Retry Now
+      </button>
+    </div>
+  </div>
+);
 
+const PropertyGate = () => {
+  const { allProperties, isLoading, error, hasLoaded, isConnecting, refreshProperties } = useProperty();
+
+  // First 6 seconds: loading screen
   if (isLoading) {
     return <HomeBaseLoader message="Loading your home..." />;
   }
 
+  // Query returned an error
   if (error) {
     return <ErrorScreen error={error} onRetry={refreshProperties} />;
   }
 
-  // New user with no properties → go straight to onboarding
+  // Query is still pending after soft timeout — show connecting screen, not an error
+  if (!hasLoaded && isConnecting) {
+    return <ConnectingScreen onRetry={refreshProperties} />;
+  }
+
+  // New user with no properties → onboarding
   if (allProperties.length === 0) {
     return <Onboarding />;
   }
