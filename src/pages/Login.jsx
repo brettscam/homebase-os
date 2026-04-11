@@ -37,7 +37,7 @@ export default function Login() {
 
   if (magicLinkSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-hb-warm flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -70,11 +70,11 @@ export default function Login() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="text-hb-teal mx-auto mb-4">
-            <HomeBaseLogo size={56} animate />
+          <div className="text-hb-teal mx-auto mb-4 flex justify-center">
+            <HomeBaseLogo size={64} animate />
           </div>
-          <h1 className="text-2xl font-bold text-hb-navy">HomeBase</h1>
-          <p className="text-hb-slate mt-1">Your home, organized and protected</p>
+          <h1 className="text-2xl font-medium tracking-[0.25em] text-hb-navy uppercase">Homebase</h1>
+          <p className="text-hb-slate mt-1">Your home, organized</p>
         </div>
 
         {/* Form */}

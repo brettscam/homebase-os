@@ -1,361 +1,199 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-// Animated HomeBase logo mark — used for loading states and branding
+// ─── H-Frame Logomark (Variant C — Diagonal Balance) ──────────────
+// Architectural doorframe with grid fill and blueprint extension lines.
+// Lintel extends top-left, threshold extends bottom-right.
+
 export const HomeBaseLogo = ({ size = 48, animate = true, className = '' }) => {
-  const s = size;
-  const half = s / 2;
-  const roofY = s * 0.18;
-  const baseY = s * 0.82;
-  const wallLeft = s * 0.22;
-  const wallRight = s * 0.78;
-  const doorLeft = s * 0.4;
-  const doorRight = s * 0.6;
-  const doorTop = s * 0.55;
+  const id = React.useId();
+  const gridId = `grid-${id}`;
+
+  // All coordinates are proportional to a 140-unit viewBox
+  const draw = animate
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.5, ease: 'easeOut' } }
+    : {};
+  const drawDelay = (d) =>
+    animate
+      ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.4, ease: 'easeOut', delay: d } }
+      : {};
 
   return (
     <svg
-      width={s}
-      height={s}
-      viewBox={`0 0 ${s} ${s}`}
+      width={size}
+      height={size}
+      viewBox="0 0 140 140"
       fill="none"
       className={className}
     >
-      {/* Roof */}
-      <motion.path
-        d={`M${half} ${roofY} L${wallRight + 4} ${s * 0.42} L${wallLeft - 4} ${s * 0.42} Z`}
-        stroke="currentColor"
-        strokeWidth={s * 0.05}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        initial={animate ? { pathLength: 0, opacity: 0 } : {}}
-        animate={animate ? { pathLength: 1, opacity: 1 } : {}}
-        transition={{ duration: 0.8, ease: 'easeOut' }}
-      />
-      {/* Walls */}
-      <motion.rect
-        x={wallLeft}
-        y={s * 0.42}
-        width={wallRight - wallLeft}
-        height={baseY - s * 0.42}
-        stroke="currentColor"
-        strokeWidth={s * 0.05}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        rx={s * 0.02}
-        initial={animate ? { pathLength: 0, opacity: 0 } : {}}
-        animate={animate ? { pathLength: 1, opacity: 1 } : {}}
-        transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
-      />
-      {/* Door */}
-      <motion.rect
-        x={doorLeft}
-        y={doorTop}
-        width={doorRight - doorLeft}
-        height={baseY - doorTop}
-        stroke="currentColor"
-        strokeWidth={s * 0.04}
-        fill="currentColor"
-        fillOpacity={0.1}
-        rx={s * 0.02}
-        initial={animate ? { scaleY: 0, opacity: 0 } : {}}
-        animate={animate ? { scaleY: 1, opacity: 1 } : {}}
-        transition={{ duration: 0.4, ease: 'easeOut', delay: 0.6 }}
-        style={{ transformOrigin: `${half}px ${baseY}px` }}
-      />
+      <defs>
+        <pattern id={gridId} width="8" height="8" patternUnits="userSpaceOnUse">
+          <path d="M 8 0 L 0 0 0 8" fill="none" stroke="currentColor" strokeWidth="0.35" opacity="0.22" />
+        </pattern>
+      </defs>
+
+      {/* Lintel extension — top-left */}
+      <motion.line x1="0" y1="26" x2="28" y2="26" stroke="currentColor" strokeWidth="1.25" opacity="0.5" {...drawDelay(0.6)} />
+
+      {/* Threshold extension — bottom-right */}
+      <motion.line x1="120" y1="117" x2="140" y2="117" stroke="currentColor" strokeWidth="1.25" opacity="0.5" {...drawDelay(0.8)} />
+
+      {/* H-Frame mark */}
+      <g transform="translate(20, 18)">
+        {/* Grid fill */}
+        <motion.rect x="10" y="12" width="80" height="80" fill={`url(#${gridId})`} {...drawDelay(0.3)} />
+        {/* Left pillar */}
+        <motion.rect x="0" y="10" width="10" height="88" fill="currentColor" {...draw} />
+        {/* Right pillar */}
+        <motion.rect x="90" y="10" width="10" height="88" fill="currentColor" {...drawDelay(0.1)} />
+        {/* Lintel (top beam) */}
+        <motion.rect x="0" y="0" width="100" height="12" fill="currentColor" {...drawDelay(0.2)} />
+        {/* Threshold (bottom beam) */}
+        <motion.rect x="0" y="96" width="100" height="6" fill="currentColor" {...drawDelay(0.4)} />
+      </g>
     </svg>
   );
 };
 
-// Animated tree SVG — draws on with path animation, positioned beside the house
-const AnimatedTree = ({ size = 64, delay = 0.8, className = '' }) => {
-  // Tree dimensions relative to provided size
-  const w = size * 0.5;
-  const h = size;
-  const cx = w / 2; // center x of tree
+// ─── Full Logo — Mark + HOMEBASE wordmark ──────────────────────────
+// Used on login page and larger brand placements.
 
-  // Trunk
-  const trunkW = w * 0.12;
-  const trunkH = h * 0.3;
-  const trunkX = cx - trunkW / 2;
-  const trunkY = h * 0.68;
-
-  // Three-tier canopy (bottom to top, overlapping triangles)
-  const canopy = [
-    // Bottom tier (widest)
-    { tipY: h * 0.22, baseY: h * 0.58, halfW: w * 0.38 },
-    // Middle tier
-    { tipY: h * 0.12, baseY: h * 0.42, halfW: w * 0.28 },
-    // Top tier (smallest)
-    { tipY: h * 0.02, baseY: h * 0.28, halfW: w * 0.18 },
-  ];
+export const HomeBaseFullLogo = ({ height = 80, className = '' }) => {
+  const id = React.useId();
+  const gridId = `gridfull-${id}`;
 
   return (
     <svg
-      width={w}
-      height={h}
-      viewBox={`0 0 ${w} ${h}`}
+      height={height}
+      viewBox="0 0 540 100"
       fill="none"
       className={className}
     >
-      {/* Trunk */}
-      <motion.rect
-        x={trunkX}
-        y={trunkY}
-        width={trunkW}
-        height={trunkH}
-        stroke="currentColor"
-        strokeWidth={w * 0.06}
-        strokeLinecap="round"
-        fill="none"
-        rx={w * 0.02}
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 0.4, ease: 'easeOut', delay }}
-      />
-      {/* Canopy tiers — drawn bottom to top */}
-      {canopy.map((tier, i) => (
-        <motion.path
-          key={i}
-          d={`M${cx} ${tier.tipY} L${cx + tier.halfW} ${tier.baseY} L${cx - tier.halfW} ${tier.baseY} Z`}
-          stroke="currentColor"
-          strokeWidth={w * 0.06}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{
-            duration: 0.5,
-            ease: 'easeOut',
-            delay: delay + 0.3 + i * 0.2,
-          }}
-        />
-      ))}
+      <defs>
+        <pattern id={gridId} width="8" height="8" patternUnits="userSpaceOnUse">
+          <path d="M 8 0 L 0 0 0 8" fill="none" stroke="#2B9E8F" strokeWidth="0.35" opacity="0.22" />
+        </pattern>
+      </defs>
+
+      {/* Lintel extends left */}
+      <line x1="0" y1="18" x2="20" y2="18" stroke="#2B9E8F" strokeWidth="1.25" opacity="0.5" />
+
+      {/* Mark */}
+      <g transform="translate(14, 10)">
+        <rect x="8" y="10" width="60" height="60" fill={`url(#${gridId})`} />
+        <rect x="0" y="8" width="8" height="68" fill="#2B9E8F" />
+        <rect x="68" y="8" width="8" height="68" fill="#2B9E8F" />
+        <rect x="0" y="0" width="76" height="10" fill="#2B9E8F" />
+        <rect x="0" y="74" width="76" height="5" fill="#2B9E8F" />
+      </g>
+
+      {/* Threshold extends into wordmark area */}
+      <line x1="90" y1="87" x2="118" y2="87" stroke="#2B9E8F" strokeWidth="1.25" opacity="0.5" />
+
+      {/* Wordmark */}
+      <text x="124" y="62" fill="#1e293b" fontFamily="Inter, -apple-system, sans-serif" fontSize="40" fontWeight="500" letterSpacing="5">HOMEBASE</text>
+
+      {/* Letter extensions — H top and final E right */}
+      <line x1="124" y1="26" x2="124" y2="16" stroke="#2B9E8F" strokeWidth="1.25" opacity="0.5" />
+      <line x1="490" y1="68" x2="508" y2="68" stroke="#2B9E8F" strokeWidth="1.25" opacity="0.5" />
     </svg>
   );
 };
 
-// Animated ground line — a subtle baseline under the house and tree
-const GroundLine = ({ width = 160, delay = 1.0 }) => (
-  <svg width={width} height={4} viewBox={`0 0 ${width} 4`} fill="none" className="mt-0">
-    <motion.line
-      x1={0}
-      y1={2}
-      x2={width}
-      y2={2}
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      initial={{ pathLength: 0, opacity: 0 }}
-      animate={{ pathLength: 1, opacity: 0.35 }}
-      transition={{ duration: 0.8, ease: 'easeOut', delay }}
-    />
-  </svg>
-);
+// ─── Full-screen loading screen ────────────────────────────────────
 
-// Animated "HB" monogram — draws the letters with path animation
-const HBMonogram = ({ size = 28, delay = 1.6, className = '' }) => {
-  const w = size * 2.2;
-  const h = size;
-  const sw = size * 0.08; // stroke width
-
-  // H letter paths — left vertical, crossbar, right vertical
-  const hLeft = size * 0.08;
-  const hRight = size * 0.48;
-  const hMid = (hLeft + hRight) / 2;
-  const hTop = size * 0.1;
-  const hBot = size * 0.9;
-  const hCross = size * 0.5;
-
-  // B letter — vertical stem + two bumps
-  const bLeft = size * 0.62;
-  const bTop = hTop;
-  const bBot = hBot;
-  const bMidY = hCross;
-  const bBulge1 = size * 1.05; // right extent of top bump
-  const bBulge2 = size * 1.1;  // right extent of bottom bump
-
-  // Single path for H
-  const hPath = `M${hLeft} ${hBot} L${hLeft} ${hTop} M${hLeft} ${hCross} L${hRight} ${hCross} M${hRight} ${hTop} L${hRight} ${hBot}`;
-
-  // Single path for B
-  const bPath = [
-    `M${bLeft} ${bBot}`,
-    `L${bLeft} ${bTop}`,
-    `C${bLeft} ${bTop} ${bBulge1} ${bTop} ${bBulge1} ${bMidY}`,
-    `C${bBulge1} ${bMidY} ${bLeft} ${bMidY} ${bLeft} ${bMidY}`,
-    `C${bLeft} ${bMidY} ${bBulge2} ${bMidY} ${bBulge2} ${bBot}`,
-    `C${bBulge2} ${bBot} ${bLeft} ${bBot} ${bLeft} ${bBot}`,
-  ].join(' ');
-
-  return (
-    <svg
-      width={w}
-      height={h}
-      viewBox={`0 0 ${w} ${h}`}
-      fill="none"
-      className={className}
-    >
-      {/* H */}
-      <motion.path
-        d={hPath}
-        stroke="currentColor"
-        strokeWidth={sw}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 0.7, ease: 'easeOut', delay }}
-      />
-      {/* B */}
-      <motion.path
-        d={bPath}
-        stroke="currentColor"
-        strokeWidth={sw}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 0.8, ease: 'easeOut', delay: delay + 0.3 }}
-      />
-    </svg>
-  );
-};
-
-// Animated progress dots — subtle pulsing indicators
-const ProgressDots = ({ delay = 1.8 }) => (
-  <motion.div
-    className="flex items-center gap-1.5 mt-4"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ delay, duration: 0.4 }}
-  >
-    {[0, 1, 2].map((i) => (
-      <motion.span
-        key={i}
-        className="block w-1.5 h-1.5 rounded-full bg-hb-teal/40"
-        animate={{
-          opacity: [0.3, 1, 0.3],
-          scale: [0.85, 1.15, 0.85],
-        }}
-        transition={{
-          duration: 1.4,
-          repeat: Infinity,
-          ease: 'easeInOut',
-          delay: delay + i * 0.2,
-        }}
-      />
-    ))}
-  </motion.div>
-);
-
-// Thin animated progress bar — fills smoothly over each cycle
-const ProgressBar = ({ cycleDuration = 7.2, delay = 0.5 }) => (
-  <motion.div
-    className="w-32 h-0.5 rounded-full bg-hb-teal/10 overflow-hidden mt-5"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ delay, duration: 0.4 }}
-  >
-    <motion.div
-      className="h-full rounded-full bg-hb-teal/30"
-      animate={{ width: ['0%', '100%'] }}
-      transition={{
-        duration: cycleDuration * 0.75,
-        repeat: Infinity,
-        ease: 'easeInOut',
-        delay,
-      }}
-    />
-  </motion.div>
-);
-
-// Full loading screen with animated logo, tree, branding text, and progress
 export const HomeBaseLoader = ({ message = 'Loading...' }) => {
-  // Total animation cycle: ~5s draw-on + 1.5s hold + 0.7s fade = ~7.2s
-  const cycleDuration = 7.2;
-
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-hb-warm z-50">
+      {/* Animated H-frame mark */}
       <motion.div
-        className="flex flex-col items-center"
-        // Loop the entire illustration: draw on, hold, fade, repeat
-        initial={{ opacity: 0 }}
-        animate={{ opacity: [0, 1, 1, 0] }}
-        transition={{
-          duration: cycleDuration,
-          times: [0, 0.05, 0.8, 1],       // fade-in ~0.35s, hold, fade-out ~1.4s
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="text-hb-teal mb-6"
       >
-        {/* Scene: house + tree side by side */}
-        <div className="flex items-end gap-1 text-hb-teal mb-1">
-          <HomeBaseLogo size={72} animate />
-          <AnimatedTree size={56} delay={0.9} />
-        </div>
-
-        {/* Ground line under the scene */}
-        <div className="text-hb-teal -mt-1">
-          <GroundLine width={140} delay={1.0} />
-        </div>
-
-        {/* HB monogram drawn in below the scene */}
-        <motion.div
-          className="text-hb-teal mt-3"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.4, duration: 0.4 }}
-        >
-          <HBMonogram size={26} delay={1.5} />
-        </motion.div>
-
-        {/* "Homebase" brand text — fades in after illustration draws */}
-        <motion.p
-          className="text-center text-xl font-semibold tracking-wide text-hb-teal select-none mt-2"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 2.2, duration: 0.6, ease: 'easeOut' }}
-        >
-          Homebase
-        </motion.p>
-
-        {/* Tagline — subtle, fades in after the brand name */}
-        <motion.p
-          className="text-center text-xs font-medium text-hb-slate/60 tracking-wider select-none mt-1"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 2.6, duration: 0.5, ease: 'easeOut' }}
-        >
-          your home, organized
-        </motion.p>
+        <HomeBaseLogo size={96} animate />
       </motion.div>
 
-      {/* Status message — persistent, outside the looping container */}
+      {/* Brand name */}
+      <motion.p
+        className="text-xl font-medium tracking-[0.35em] text-hb-navy select-none uppercase"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.5, ease: 'easeOut' }}
+      >
+        Homebase
+      </motion.p>
+
+      {/* Tagline */}
+      <motion.p
+        className="text-xs font-medium text-hb-slate/60 tracking-wider select-none mt-1.5"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.7, duration: 0.4 }}
+      >
+        your home, organized
+      </motion.p>
+
+      {/* Status message */}
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5, duration: 0.4 }}
-        className="text-sm font-medium text-hb-slate tracking-wide mt-6"
+        className="text-sm font-medium text-hb-slate tracking-wide mt-8"
       >
         {message}
       </motion.p>
 
-      {/* Progress bar — thin filling bar synced to the cycle */}
-      <ProgressBar cycleDuration={cycleDuration} delay={0.5} />
+      {/* Progress bar */}
+      <motion.div
+        className="w-32 h-0.5 rounded-full bg-hb-teal/10 overflow-hidden mt-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6, duration: 0.4 }}
+      >
+        <motion.div
+          className="h-full rounded-full bg-hb-teal/30"
+          animate={{ width: ['0%', '100%'] }}
+          transition={{
+            duration: 5,
+            repeat: Infinity,
+            ease: 'easeInOut',
+            delay: 0.8,
+          }}
+        />
+      </motion.div>
 
-      {/* Progress dots */}
-      <ProgressDots delay={1.0} />
+      {/* Pulsing dots */}
+      <motion.div
+        className="flex items-center gap-1.5 mt-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 0.4 }}
+      >
+        {[0, 1, 2].map((i) => (
+          <motion.span
+            key={i}
+            className="block w-1.5 h-1.5 rounded-full bg-hb-teal/40"
+            animate={{
+              opacity: [0.3, 1, 0.3],
+              scale: [0.85, 1.15, 0.85],
+            }}
+            transition={{
+              duration: 1.4,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: 1 + i * 0.2,
+            }}
+          />
+        ))}
+      </motion.div>
     </div>
   );
 };
 
-// Inline spinner with logo mark
+// ─── Inline spinner ────────────────────────────────────────────────
+
 export const HomeBaseSpinner = ({ size = 32, className = '' }) => (
   <div className={`flex items-center justify-center ${className}`}>
     <motion.div
