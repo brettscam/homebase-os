@@ -171,3 +171,50 @@ export function calculateCompletion(data) {
 export function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
+
+// ---- Chat History Store ----
+const CHAT_STORAGE_KEY = 'homebase_chat_history';
+
+export function getChatHistory() {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function saveChatHistory(conversations) {
+  localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(conversations));
+  return conversations;
+}
+
+export function createConversation(title = 'New Chat') {
+  const conversations = getChatHistory();
+  const newConvo = {
+    id: generateId(),
+    title,
+    messages: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  conversations.unshift(newConvo);
+  saveChatHistory(conversations);
+  return newConvo;
+}
+
+export function updateConversation(id, updates) {
+  const conversations = getChatHistory();
+  const idx = conversations.findIndex(c => c.id === id);
+  if (idx === -1) return null;
+  conversations[idx] = { ...conversations[idx], ...updates, updatedAt: new Date().toISOString() };
+  saveChatHistory(conversations);
+  return conversations[idx];
+}
+
+export function deleteConversation(id) {
+  const conversations = getChatHistory().filter(c => c.id !== id);
+  saveChatHistory(conversations);
+  return conversations;
+}

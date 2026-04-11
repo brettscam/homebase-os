@@ -2,94 +2,149 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { base44 } from '@/api/base44Client';
 import { getHomeData, calculateCompletion } from '../lib/homeDataStore';
+import { useProperty } from '@/lib/PropertyContext';
+import { systemsArrayToLegacy } from '@/lib/supabaseDataStore';
+import { HomeBaseLoader } from '@/components/HomeBaseLogo';
 import {
   Home,
-  MessageCircle,
   Grid3X3,
   AlertTriangle,
   Wifi,
   Key,
-  Trash2,
-  Wind,
-  Mic,
-  Send,
   MapPin,
   ChevronRight,
   Book,
-  ShoppingCart,
   Droplets,
   Flame,
   Zap,
   Phone,
-  ArrowLeft,
   Ruler,
   Palette,
   Refrigerator,
-  X,
-  Loader2,
-  Sparkles,
   ArrowRight,
-  Wrench
+  Wrench,
+  Shield,
+  TrendingUp,
+  Plug,
+  CheckCircle2,
+  Circle
 } from 'lucide-react';
 
-// Health Score Ring Component
-const HealthScoreRing = ({ score }) => {
-  const [animatedScore, setAnimatedScore] = useState(0);
-  const circumference = 2 * Math.PI * 88;
-  const offset = circumference - (animatedScore / 100) * circumference;
+function useHomeData() {
+  const { activeProperty, homeData: supaData, isLoading } = useProperty();
 
-  useEffect(() => {
-    const timer = setTimeout(() => setAnimatedScore(score), 300);
-    return () => clearTimeout(timer);
-  }, [score]);
+  if (isLoading) return { homeData: getHomeData(), loading: true };
 
-  return (
-    <div className="relative w-52 h-52 mx-auto">
-      <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="88" fill="none" stroke="#E5E7EB" strokeWidth="8" />
-        <motion.circle
-          cx="100" cy="100" r="88" fill="none" stroke="#2563EB" strokeWidth="8"
-          strokeLinecap="round" strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span
-          className="text-5xl font-light text-gray-900 tracking-tight"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          {animatedScore}%
-        </motion.span>
-        <span className="text-sm font-medium text-gray-400 tracking-widest uppercase mt-1">Healthy</span>
-      </div>
-    </div>
-  );
-};
+  if (activeProperty && supaData) {
+    return {
+      homeData: {
+        property: {
+          address: activeProperty.address || '',
+          city: activeProperty.city || '',
+          state: activeProperty.state || '',
+          zip: activeProperty.zip || '',
+          yearBuilt: activeProperty.year_built || '',
+          sqft: activeProperty.sqft || '',
+          lotSize: activeProperty.lot_size || '',
+          stories: activeProperty.stories || '',
+          bedrooms: activeProperty.bedrooms || '',
+          bathrooms: activeProperty.bathrooms || '',
+        },
+        rooms: (supaData.rooms || []).map(r => ({
+          id: r.id, name: r.name, type: r.type, floor: r.floor, sqft: r.sqft, notes: r.notes,
+        })),
+        appliances: (supaData.appliances || []).map(a => ({
+          id: a.id, name: a.name, type: a.type, brand: a.brand, model: a.model,
+          serialNumber: a.serial_number, installDate: a.install_date, notes: a.notes,
+        })),
+        systems: systemsArrayToLegacy(supaData.systems || []),
+        smartHome: {
+          wifi: { networkName: '', password: '' },
+          doorLocks: [],
+          security: { provider: '', panelLocation: '' },
+          garage: { brand: '', code: '' },
+        },
+        emergency: {
+          waterShutoff: { location: '', instructions: '' },
+          gasShutoff: { location: '', instructions: '' },
+          electricalPanel: { location: '', instructions: '' },
+          contacts: [],
+        },
+        exterior: {
+          roof: { type: '', material: '', installDate: '' },
+          gutters: { type: '', material: '' },
+          siding: { material: '' },
+        },
+        paint: (supaData.paintRecords || []).map(p => ({
+          id: p.id, room: p.room_name, colorName: p.color_name, colorCode: p.color_hex,
+          brand: p.brand, finish: p.finish,
+        })),
+        contacts: supaData.contacts || [],
+        utilities: supaData.utilities || [],
+        documents: supaData.documents || [],
+        onboardingComplete: activeProperty.onboarding_complete,
+        lastUpdated: activeProperty.updated_at,
+      },
+      loading: false,
+    };
+  }
 
-// Quick Info Card Component
-const QuickInfoCard = ({ icon: Icon, title, primary, secondary, color, delay }) => (
+  return { homeData: getHomeData(), loading: false };
+}
+
+// Progress item for the setup checklist
+const ProgressItem = ({ label, done, icon: Icon }) => (
+  <div className="flex items-center gap-3 py-2">
+    {done
+      ? <CheckCircle2 className="w-5 h-5 text-hb-teal flex-shrink-0" strokeWidth={1.5} />
+      : <Circle className="w-5 h-5 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
+    }
+    <span className={`text-sm ${done ? 'text-hb-navy' : 'text-hb-slate'}`}>{label}</span>
+  </div>
+);
+
+// Quick access card
+const QuickCard = ({ icon: Icon, title, value, subtitle, delay }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
+    initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.5 }}
-    className="bg-white rounded-3xl p-5 shadow-sm border border-gray-50 hover:shadow-md transition-shadow duration-300"
+    transition={{ delay, duration: 0.4 }}
+    className="bg-white rounded-2xl p-5 border border-gray-100 hover:border-hb-teal-200 transition-colors"
   >
-    <div className={`w-10 h-10 rounded-2xl ${color} flex items-center justify-center mb-4`}>
-      <Icon className="w-5 h-5 text-white" strokeWidth={1.5} />
+    <div className="w-10 h-10 rounded-xl bg-hb-teal-50 flex items-center justify-center mb-3">
+      <Icon className="w-5 h-5 text-hb-teal" strokeWidth={1.5} />
     </div>
-    <p className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-1">{title}</p>
-    <p className="text-lg font-semibold text-gray-900 tracking-tight">{primary}</p>
-    {secondary && <p className="text-sm text-gray-500 mt-0.5">{secondary}</p>}
+    <p className="text-xs font-medium text-hb-slate uppercase tracking-wider mb-1">{title}</p>
+    <p className="text-lg font-semibold text-hb-navy">{value}</p>
+    {subtitle && <p className="text-sm text-hb-slate mt-0.5">{subtitle}</p>}
   </motion.div>
 );
 
-// Sub-nav for HomeBase internal views
+// Navigation card linking to a page
+const NavCard = ({ icon: Icon, title, description, to, delay }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.4 }}
+  >
+    <Link
+      to={to}
+      className="flex items-center gap-4 bg-white rounded-2xl p-5 border border-gray-100 hover:border-hb-teal-200 hover:shadow-sm transition-all group"
+    >
+      <div className="w-10 h-10 rounded-xl bg-hb-teal-50 flex items-center justify-center flex-shrink-0">
+        <Icon className="w-5 h-5 text-hb-teal" strokeWidth={1.5} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-hb-navy">{title}</p>
+        <p className="text-xs text-hb-slate mt-0.5">{description}</p>
+      </div>
+      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-hb-teal transition-colors flex-shrink-0" strokeWidth={1.5} />
+    </Link>
+  </motion.div>
+);
+
+// Sub-nav
 const SubNav = ({ activeView, setActiveView }) => {
   const items = [
     { id: 'home', icon: Home, label: 'Dashboard' },
@@ -107,8 +162,8 @@ const SubNav = ({ activeView, setActiveView }) => {
             activeView === item.id
               ? item.id === 'emergency'
                 ? 'bg-red-50 text-red-600'
-                : 'bg-blue-50 text-blue-600'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                : 'bg-hb-teal-50 text-hb-teal'
+              : 'text-hb-slate hover:text-hb-navy hover:bg-gray-50'
           }`}
         >
           <item.icon className="w-4 h-4" strokeWidth={1.5} />
@@ -121,419 +176,304 @@ const SubNav = ({ activeView, setActiveView }) => {
 
 // Dashboard View
 const DashboardView = () => {
-  const homeData = getHomeData();
+  const { homeData, loading } = useHomeData();
+
+  if (loading) return <HomeBaseLoader message="Loading your home..." />;
+
   const completion = calculateCompletion(homeData);
-  const hasStartedOnboarding = homeData.onboardingComplete || completion.overall.percentage > 0;
-  const wifiName = homeData.smartHome?.wifi?.networkName;
-  const wifiPass = homeData.smartHome?.wifi?.password;
-  const doorLock = homeData.smartHome?.doorLocks?.[0];
+  const pct = completion.overall.percentage;
+  const hasProperty = homeData.property?.address;
+  const hasRooms = homeData.rooms?.length > 0;
+  const hasAppliances = homeData.appliances?.length > 0;
+  const hasSystems = homeData.systems?.hvac?.brand || homeData.systems?.waterHeater?.brand;
+  const hasContacts = homeData.contacts?.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="px-6 pt-10 pb-8 max-w-4xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl font-light text-gray-900 tracking-tight mb-3">
-            Your Complete Home Manual
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            {homeData.property?.address
-              ? `${homeData.property.address}, ${homeData.property.city || ''}`
-              : 'Every detail about your home in one comprehensive digital manual'}
-          </p>
-        </motion.div>
-
-        {/* Setup CTA */}
-        {!homeData.onboardingComplete && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.15 }}
-            className="mb-8"
-          >
-            <Link
-              to={createPageUrl('Onboarding')}
-              className="block bg-gradient-to-br from-purple-600 to-indigo-700 rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all hover:scale-[1.02] duration-300"
-            >
-              <div className="flex items-start gap-6 mb-4">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="w-8 h-8 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-2xl font-semibold text-white mb-2">
-                    {hasStartedOnboarding ? 'Continue Home Setup' : 'Set Up Your Home'}
-                  </h2>
-                  <p className="text-purple-100 text-sm leading-relaxed">
-                    {hasStartedOnboarding
-                      ? `You're ${completion.overall.percentage}% complete. Pick up where you left off.`
-                      : 'Guided wizard with AI-powered document import. Takes about 10 minutes.'}
-                  </p>
-                </div>
-                <ArrowRight className="w-8 h-8 text-white/80" />
-              </div>
-              {hasStartedOnboarding && (
-                <div className="w-full bg-white/20 rounded-full h-2">
-                  <div
-                    className="bg-white rounded-full h-2 transition-all duration-700"
-                    style={{ width: `${completion.overall.percentage}%` }}
-                  />
-                </div>
-              )}
-            </Link>
-          </motion.div>
-        )}
-
-        {/* Hero CTA Card */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="mb-12"
-        >
-          <Link
-            to={createPageUrl('HomeBaseManual')}
-            className="block bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all hover:scale-105 duration-300"
-          >
-            <div className="flex items-start gap-6 mb-6">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0">
-                <Book className="w-8 h-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-semibold text-white mb-2">Open Full Manual</h2>
-                <p className="text-blue-100 text-sm leading-relaxed">
-                  Interactive property map, complete room specs, appliance warranties, emergency shutoffs, and all home documentation
-                </p>
-              </div>
-              <ChevronRight className="w-8 h-8 text-white/80" />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 text-white/90 text-sm">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-                <p className="font-semibold text-lg">{completion.overall.percentage}%</p>
-                <p className="text-xs text-white/70">Complete</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-                <p className="font-semibold text-lg">{completion.overall.completed}</p>
-                <p className="text-xs text-white/70">Data Points</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-                <p className="font-semibold text-lg">Map</p>
-                <p className="text-xs text-white/70">Property View</p>
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* Quick Access Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mb-8"
-        >
-          <h3 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4 text-center">Quick Access</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <QuickInfoCard
-              icon={Wifi}
-              title="WiFi"
-              primary={wifiName || "Redwood_Mesh"}
-              secondary={wifiPass || "GiantTrees26!"}
-              color="bg-blue-600"
-              delay={0.5}
-            />
-            <QuickInfoCard
-              icon={Key}
-              title="Access"
-              primary={doorLock?.code || "4821#"}
-              secondary={doorLock?.location || "Front Door"}
-              color="bg-emerald-500"
-              delay={0.6}
-            />
-          </div>
-        </motion.div>
-      </div>
-    </div>
-  );
-};
-
-// Room Detail View
-const RoomDetailView = () => (
-  <div className="min-h-screen bg-[#F9F9F9]">
-    <div className="px-6 pt-8 max-w-4xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
-      >
-        <p className="text-sm font-medium text-gray-400 tracking-widest uppercase mb-2">Room Detail</p>
-        <h1 className="text-3xl font-light text-gray-900 tracking-tight">Kitchen</h1>
-      </motion.div>
-
-      {/* Room Image */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
-        className="relative rounded-3xl overflow-hidden mb-8 bg-gradient-to-br from-slate-100 to-slate-200 aspect-video"
-      >
-        <img
-          src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80"
-          alt="Kitchen"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium text-gray-700">
-          360° View
-        </div>
-      </motion.div>
-
-      {/* Specs Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="mb-6"
-      >
-        <h2 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4 flex items-center gap-2">
-          <Ruler className="w-4 h-4" />
-          Specifications
-        </h2>
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-50">
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Ceiling Height</p>
-              <p className="text-xl font-semibold text-gray-900">9' 6"</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Dimensions</p>
-              <p className="text-xl font-semibold text-gray-900">14' x 18'</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Square Footage</p>
-              <p className="text-xl font-semibold text-gray-900">252 sq ft</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Windows</p>
-              <p className="text-xl font-semibold text-gray-900">3</p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Colors Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="mb-6"
-      >
-        <h2 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4 flex items-center gap-2">
-          <Palette className="w-4 h-4" />
-          Paint Colors
-        </h2>
-        <div className="space-y-3">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-50 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#F5F5F0] border border-gray-200" />
-            <div className="flex-1">
-              <p className="font-medium text-gray-900">Wall Paint</p>
-              <p className="text-sm text-gray-500">Benjamin Moore "Chantilly Lace"</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-300" />
-          </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-50 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#0B3142]" />
-            <div className="flex-1">
-              <p className="font-medium text-gray-900">Cabinet Paint</p>
-              <p className="text-sm text-gray-500">Farrow & Ball "Hague Blue"</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-300" />
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Appliances Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-      >
-        <h2 className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-4 flex items-center gap-2">
-          <Refrigerator className="w-4 h-4" />
-          Appliances
-        </h2>
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-50">
-          <div className="flex items-start gap-4 mb-4">
-            <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center">
-              <Refrigerator className="w-7 h-7 text-gray-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">Refrigerator</p>
-              <p className="text-sm text-gray-500">Sub-Zero Classic BI-42U</p>
-              <p className="text-xs text-gray-400 mt-1">Installed 2021 · Warranty Active</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl transition-colors">
-              <Book className="w-4 h-4" />
-              <span className="text-sm font-medium">Manual</span>
-            </button>
-            <button className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl transition-colors">
-              <ShoppingCart className="w-4 h-4" />
-              <span className="text-sm font-medium">Order Filter</span>
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  </div>
-);
-
-// Emergency View
-const EmergencyView = () => {
-  const homeData = getHomeData();
-  const emergencyItems = [
-    {
-      icon: Droplets,
-      title: 'Water Main Shutoff',
-      location: 'Front Yard',
-      detail: 'Blue Lid · Turn Clockwise',
-      color: 'bg-blue-500',
-    },
-    {
-      icon: Flame,
-      title: 'Gas Shutoff',
-      location: 'Left Side of House',
-      detail: 'Wrench Attached',
-      color: 'bg-orange-500',
-    },
-    {
-      icon: Zap,
-      title: 'Electrical Panel',
-      location: 'Garage',
-      detail: 'Panel A · Main Breaker Top Left',
-      color: 'bg-yellow-500',
-    },
-  ];
-
-  return (
-    <div className="min-h-screen bg-slate-900">
-      <div className="px-6 pt-8 max-w-4xl mx-auto">
+    <div className="min-h-screen bg-hb-warm">
+      <div className="px-6 pt-8 pb-12 max-w-3xl mx-auto">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-4 h-4 text-red-500" />
-            <p className="text-sm font-medium text-red-500 tracking-widest uppercase">Emergency Mode</p>
-          </div>
-          <h1 className="text-3xl font-light text-white tracking-tight">Critical Shutoffs</h1>
+          <h1 className="text-3xl font-semibold text-hb-navy tracking-tight mb-1">
+            {hasProperty ? homeData.property.address : 'Welcome to HomeBase'}
+          </h1>
+          {hasProperty && (
+            <p className="text-hb-slate">
+              {[homeData.property.city, homeData.property.state].filter(Boolean).join(', ')}
+              {homeData.property.sqft && ` \u00B7 ${homeData.property.sqft} sq ft`}
+              {homeData.property.yearBuilt && ` \u00B7 Built ${homeData.property.yearBuilt}`}
+            </p>
+          )}
         </motion.div>
 
-        {/* Emergency Call Button */}
+        {/* Setup Progress */}
+        {pct < 100 && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-2xl p-6 border border-gray-100 mb-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-hb-navy">Home Setup</h2>
+                <p className="text-sm text-hb-slate">{pct}% complete</p>
+              </div>
+              <Link
+                to={createPageUrl('Onboarding')}
+                className="flex items-center gap-2 px-4 py-2 bg-hb-teal text-white rounded-xl text-sm font-medium hover:bg-hb-teal-600 transition-colors"
+              >
+                Continue
+                <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+              </Link>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
+              <motion.div
+                className="bg-hb-teal rounded-full h-2"
+                initial={{ width: 0 }}
+                animate={{ width: `${pct}%` }}
+                transition={{ duration: 1, ease: 'easeOut' }}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-x-6">
+              <ProgressItem label="Property details" done={!!hasProperty} icon={Home} />
+              <ProgressItem label="Rooms added" done={hasRooms} icon={Grid3X3} />
+              <ProgressItem label="Appliances logged" done={hasAppliances} icon={Refrigerator} />
+              <ProgressItem label="Systems configured" done={!!hasSystems} icon={Wrench} />
+              <ProgressItem label="Contacts saved" done={hasContacts} icon={Shield} />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Quick Access */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="mb-6"
+        >
+          <h3 className="text-xs font-semibold text-hb-slate uppercase tracking-wider mb-3">Quick Access</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <QuickCard
+              icon={Wifi}
+              title="WiFi"
+              value={homeData.smartHome?.wifi?.networkName || 'Not set'}
+              subtitle={homeData.smartHome?.wifi?.password || 'Add in Manual'}
+              delay={0.25}
+            />
+            <QuickCard
+              icon={Key}
+              title="Access"
+              value={homeData.smartHome?.doorLocks?.[0]?.code || 'Not set'}
+              subtitle={homeData.smartHome?.doorLocks?.[0]?.location || 'Add in Manual'}
+              delay={0.3}
+            />
+          </div>
+        </motion.div>
+
+        {/* Navigate */}
+        <h3 className="text-xs font-semibold text-hb-slate uppercase tracking-wider mb-3">Explore</h3>
+        <div className="space-y-3">
+          <NavCard
+            icon={Book}
+            title="Home Manual"
+            description="Complete specs, warranties, and documentation"
+            to={createPageUrl('HomeBaseManual')}
+            delay={0.35}
+          />
+          <NavCard
+            icon={TrendingUp}
+            title="Insights"
+            description="Energy usage, system health, and savings"
+            to={createPageUrl('Insights')}
+            delay={0.4}
+          />
+          <NavCard
+            icon={Wrench}
+            title="Projects"
+            description="Track repairs, upgrades, and contractor quotes"
+            to={createPageUrl('Projects')}
+            delay={0.45}
+          />
+          <NavCard
+            icon={Plug}
+            title="Integrations"
+            description="Utility bills and connected services"
+            to={createPageUrl('Integrations')}
+            delay={0.5}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Room Detail View (placeholder)
+const RoomDetailView = () => {
+  const { homeData } = useHomeData();
+  const rooms = homeData.rooms || [];
+
+  return (
+    <div className="min-h-screen bg-hb-warm">
+      <div className="px-6 pt-8 max-w-3xl mx-auto">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
+          <h1 className="text-2xl font-semibold text-hb-navy tracking-tight mb-1">Rooms</h1>
+          <p className="text-sm text-hb-slate">{rooms.length} room{rooms.length !== 1 ? 's' : ''} tracked</p>
+        </motion.div>
+
+        {rooms.length === 0 ? (
+          <div className="bg-white rounded-2xl p-8 border border-gray-100 text-center">
+            <Grid3X3 className="w-10 h-10 text-gray-300 mx-auto mb-3" strokeWidth={1.5} />
+            <p className="text-hb-navy font-medium mb-1">No rooms yet</p>
+            <p className="text-sm text-hb-slate mb-4">Add rooms during onboarding or in the Manual.</p>
+            <Link
+              to={createPageUrl('HomeBaseManual')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-hb-teal text-white rounded-xl text-sm font-medium hover:bg-hb-teal-600 transition-colors"
+            >
+              Open Manual
+              <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {rooms.map((room, i) => (
+              <motion.div
+                key={room.id || i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="bg-white rounded-2xl p-5 border border-gray-100"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-hb-teal-50 flex items-center justify-center">
+                    <Home className="w-5 h-5 text-hb-teal" strokeWidth={1.5} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-hb-navy">{room.name}</p>
+                    <p className="text-xs text-hb-slate">
+                      {[room.type, room.floor && `Floor ${room.floor}`, room.sqft && `${room.sqft} sq ft`].filter(Boolean).join(' \u00B7 ')}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Emergency View
+const EmergencyView = () => {
+  const { homeData } = useHomeData();
+  const emergencyItems = [
+    { icon: Droplets, title: 'Water Main Shutoff', location: homeData.emergency?.waterShutoff?.location || 'Not set', detail: homeData.emergency?.waterShutoff?.instructions || 'Add location in Manual', color: 'bg-blue-500' },
+    { icon: Flame, title: 'Gas Shutoff', location: homeData.emergency?.gasShutoff?.location || 'Not set', detail: homeData.emergency?.gasShutoff?.instructions || 'Add location in Manual', color: 'bg-orange-500' },
+    { icon: Zap, title: 'Electrical Panel', location: homeData.emergency?.electricalPanel?.location || 'Not set', detail: homeData.emergency?.electricalPanel?.instructions || 'Add location in Manual', color: 'bg-amber-500' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-900">
+      <div className="px-6 pt-8 max-w-3xl mx-auto">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-red-500" strokeWidth={1.5} />
+            <p className="text-sm font-semibold text-red-500 uppercase tracking-wider">Emergency</p>
+          </div>
+          <h1 className="text-3xl font-semibold text-white tracking-tight">Critical Shutoffs</h1>
+        </motion.div>
+
         <motion.a
           href="tel:911"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl mb-8 transition-colors"
+          className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl mb-8 transition-colors font-semibold"
         >
-          <Phone className="w-5 h-5" />
-          <span className="font-semibold">Call 911</span>
+          <Phone className="w-5 h-5" strokeWidth={1.5} />
+          Call 911
         </motion.a>
 
-        {/* Emergency Items */}
         <div className="space-y-4">
-          {emergencyItems.map((item, index) => (
+          {emergencyItems.map((item, i) => (
             <motion.div
-              key={index}
+              key={i}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + index * 0.1 }}
-              className="bg-slate-800 rounded-3xl p-6 border border-slate-700"
+              transition={{ delay: 0.2 + i * 0.1 }}
+              className="bg-slate-800 rounded-2xl p-6 border border-slate-700"
             >
               <div className="flex items-start gap-4">
-                <div className={`w-14 h-14 ${item.color} rounded-2xl flex items-center justify-center`}>
-                  <item.icon className="w-7 h-7 text-white" />
+                <div className={`w-12 h-12 ${item.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                  <item.icon className="w-6 h-6 text-white" strokeWidth={1.5} />
                 </div>
-                <div className="flex-1">
+                <div>
                   <h3 className="text-lg font-semibold text-white mb-1">{item.title}</h3>
                   <p className="text-slate-300">{item.location}</p>
                   <p className="text-sm text-slate-500 mt-1">{item.detail}</p>
                 </div>
               </div>
-              <button className="w-full mt-4 flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl transition-colors">
-                <MapPin className="w-4 h-4" />
-                <span className="text-sm font-medium">Show on Property Map</span>
-              </button>
             </motion.div>
           ))}
         </div>
 
-        {/* Additional Emergency Contacts */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
           className="mt-8 pb-8"
         >
-          <h2 className="text-xs font-medium text-slate-500 tracking-widest uppercase mb-4">Emergency Contacts</h2>
-          <div className="space-y-3">
-            {(() => {
-              const emergencyContacts = (homeData.contacts || []).filter(c => c.isEmergency);
-              if (emergencyContacts.length > 0) {
-                return emergencyContacts.map((contact) => (
-                  <a
-                    key={contact.id}
-                    href={contact.phone ? `tel:${contact.phone.replace(/\D/g, '')}` : '#'}
-                    className="flex items-center justify-between bg-slate-800 rounded-2xl p-4 border border-slate-700"
-                  >
-                    <div>
-                      <p className="font-medium text-white">{contact.name}</p>
-                      <p className="text-sm text-slate-400">{contact.trade || contact.company || ''}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-blue-400 text-sm">{contact.phone || 'No phone'}</p>
-                    </div>
-                  </a>
-                ));
-              }
-              // Fallback placeholder when no emergency contacts added yet
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Emergency Contacts</h2>
+          {(() => {
+            const ec = (homeData.contacts || []).filter(c => c.isEmergency);
+            if (ec.length > 0) {
               return (
-                <div className="text-center py-6">
-                  <p className="text-slate-400 text-sm">No emergency contacts yet.</p>
-                  <p className="text-slate-500 text-xs mt-1">Add contacts and flag them as emergency in the Contacts page.</p>
+                <div className="space-y-3">
+                  {ec.map((c) => (
+                    <a
+                      key={c.id}
+                      href={c.phone ? `tel:${c.phone.replace(/\D/g, '')}` : '#'}
+                      className="flex items-center justify-between bg-slate-800 rounded-2xl p-4 border border-slate-700"
+                    >
+                      <div>
+                        <p className="font-medium text-white">{c.name}</p>
+                        <p className="text-sm text-slate-400">{c.trade || c.company || ''}</p>
+                      </div>
+                      <p className="text-blue-400 text-sm">{c.phone || 'No phone'}</p>
+                    </a>
+                  ))}
                 </div>
               );
-            })()}
-          </div>
+            }
+            return (
+              <div className="text-center py-6">
+                <p className="text-slate-400 text-sm">No emergency contacts yet.</p>
+                <p className="text-slate-500 text-xs mt-1">Add contacts in the Contacts page and flag them as emergency.</p>
+              </div>
+            );
+          })()}
         </motion.div>
       </div>
     </div>
   );
 };
 
-// Main App Component
 export default function HomeBase() {
   const [activeView, setActiveView] = useState('home');
 
   const renderView = () => {
     switch (activeView) {
-      case 'home':
-        return <DashboardView />;
-      case 'rooms':
-        return <RoomDetailView />;
-      case 'emergency':
-        return <EmergencyView />;
-      default:
-        return <DashboardView />;
+      case 'home': return <DashboardView />;
+      case 'rooms': return <RoomDetailView />;
+      case 'emergency': return <EmergencyView />;
+      default: return <DashboardView />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F9F9]">
+    <div className="min-h-screen bg-hb-warm">
       <SubNav activeView={activeView} setActiveView={setActiveView} />
       <AnimatePresence mode="wait">
         <motion.div

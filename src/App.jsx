@@ -6,7 +6,10 @@ import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { PropertyProvider, useProperty } from '@/lib/PropertyContext';
+import Login from '@/pages/Login';
+import Onboarding from '@/pages/Onboarding';
+import { HomeBaseLoader } from '@/components/HomeBaseLogo';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -17,29 +20,37 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isAuthenticated } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
+  if (isLoadingAuth) {
+    return <HomeBaseLoader message="Checking your account..." />;
   }
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    }
+  // Not logged in → show login page
+  if (!isAuthenticated) {
+    return <Login />;
   }
 
-  // Render the main app
+  // Logged in → render the app with property context
+  return (
+    <PropertyProvider>
+      <PropertyGate />
+    </PropertyProvider>
+  );
+};
+
+const PropertyGate = () => {
+  const { allProperties, isLoading } = useProperty();
+
+  if (isLoading) {
+    return <HomeBaseLoader message="Loading your home..." />;
+  }
+
+  // New user with no properties → go straight to onboarding
+  if (allProperties.length === 0) {
+    return <Onboarding />;
+  }
+
   return (
     <Routes>
       <Route path="/" element={
