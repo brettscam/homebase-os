@@ -190,9 +190,10 @@ const AddressLookupStep = ({ data, onChange }) => {
     setLookupLoading(true);
     try {
       const fullAddress = `${p.address}, ${p.city}, ${p.state} ${p.zip}`.trim();
-      // AI property lookup is temporarily disabled while migrating backends.
-      // For now, skip to manual entry.
-      toast.info('Auto-lookup coming soon — please enter details manually for now.');
+      // AI property lookup will be added in a future release.
+      // For now, accept the address and let the user continue.
+      toast.success('Address saved! Continue to add your home details.');
+      setLookupDone(true);
       setLookupLoading(false);
       return;
       const response = '';
