@@ -4,8 +4,10 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    'Missing Supabase env vars. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env'
+  console.error(
+    '[Supabase] MISSING ENV VARS — Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.\n' +
+    `  URL: ${supabaseUrl || '(not set)'}\n` +
+    `  KEY: ${supabaseAnonKey ? supabaseAnonKey.substring(0, 12) + '...' : '(not set)'}`
   );
 }
 

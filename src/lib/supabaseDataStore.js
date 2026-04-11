@@ -17,14 +17,27 @@ export async function getActiveProperty(userId) {
 }
 
 export async function getUserProperties(userId) {
-  const { data, error } = await supabase
-    .from('properties')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: true });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-  if (error) throw error;
-  return data || [];
+  try {
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true })
+      .abortSignal(controller.signal);
+
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Properties query timed out — check Supabase connection and API keys');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function createProperty(userId, propertyData) {
