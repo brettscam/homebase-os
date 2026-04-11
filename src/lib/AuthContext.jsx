@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
 
 const AuthContext = createContext();
@@ -9,10 +9,40 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const resolved = useRef(false);
+
+  const resolveAuth = () => {
+    if (!resolved.current) {
+      resolved.current = true;
+      setIsLoadingAuth(false);
+    }
+  };
 
   useEffect(() => {
-    // Check current session on mount
-    checkSession();
+    // Safety timeout — never stay on loading screen forever
+    const timeout = setTimeout(() => {
+      if (!resolved.current) {
+        console.warn('Auth check timed out after 8s');
+        resolveAuth();
+      }
+    }, 8000);
+
+    // Check current session
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error) {
+        console.error('Session check failed:', error);
+        setAuthError({ type: 'unknown', message: error.message });
+      } else if (session?.user) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+        await loadProfile(session.user.id);
+      }
+      resolveAuth();
+    }).catch((err) => {
+      console.error('Unexpected auth error:', err);
+      setAuthError({ type: 'unknown', message: err.message });
+      resolveAuth();
+    });
 
     // Listen for auth state changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -26,38 +56,15 @@ export const AuthProvider = ({ children }) => {
           setProfile(null);
           setIsAuthenticated(false);
         }
-        setIsLoadingAuth(false);
+        resolveAuth();
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
-
-  const checkSession = async () => {
-    try {
-      setIsLoadingAuth(true);
-      const { data: { session }, error } = await supabase.auth.getSession();
-
-      if (error) {
-        console.error('Session check failed:', error);
-        setAuthError({ type: 'unknown', message: error.message });
-        setIsLoadingAuth(false);
-        return;
-      }
-
-      if (session?.user) {
-        setUser(session.user);
-        setIsAuthenticated(true);
-        await loadProfile(session.user.id);
-      }
-
-      setIsLoadingAuth(false);
-    } catch (error) {
-      console.error('Unexpected auth error:', error);
-      setAuthError({ type: 'unknown', message: error.message });
-      setIsLoadingAuth(false);
-    }
-  };
 
   const loadProfile = async (userId) => {
     try {
@@ -146,17 +153,13 @@ export const AuthProvider = ({ children }) => {
       profile,
       isAuthenticated,
       isLoadingAuth,
-      isLoadingPublicSettings: false, // No longer needed, kept for compat
       authError,
-      appPublicSettings: null, // No longer needed, kept for compat
       signUp,
       signIn,
       signInWithGoogle,
       signInWithMagicLink,
       logout,
       updateProfile,
-      navigateToLogin: () => {}, // No longer redirects externally
-      checkAppState: checkSession,
     }}>
       {children}
     </AuthContext.Provider>

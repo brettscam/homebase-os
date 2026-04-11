@@ -31,7 +31,7 @@ const StepProgress = ({ currentStep, totalSteps, steps }) => (
     {steps.map((step, i) => (
       <div key={i} className="flex-1 flex items-center gap-1">
         <div className={`h-1.5 rounded-full flex-1 transition-all duration-500 ${
-          i < currentStep ? 'bg-blue-600' : i === currentStep ? 'bg-blue-400' : 'bg-gray-200'
+          i < currentStep ? 'bg-hb-teal' : i === currentStep ? 'bg-hb-teal-300' : 'bg-gray-200'
         }`} />
       </div>
     ))}
@@ -52,7 +52,7 @@ const Field = ({ label, value, onChange, placeholder, type = 'text', suffix, cla
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm text-gray-900 transition-all ${
+        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-hb-teal focus:border-transparent outline-none text-sm text-gray-900 transition-all ${
           suffix ? 'pr-12' : ''
         } ${disabled ? 'opacity-60 cursor-not-allowed' : ''} ${
           verified ? 'border-green-200 bg-green-50/50' : ''
@@ -76,8 +76,8 @@ const StepLayout = ({ title, subtitle, icon: Icon, children, tip }) => (
   >
     <div className="mb-8">
       {Icon && (
-        <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
-          <Icon className="w-7 h-7 text-blue-600" strokeWidth={1.5} />
+        <div className="w-14 h-14 bg-hb-teal-50 rounded-2xl flex items-center justify-center mb-4">
+          <Icon className="w-7 h-7 text-hb-teal" strokeWidth={1.5} />
         </div>
       )}
       <h2 className="text-3xl font-light text-gray-900 tracking-tight mb-2">{title}</h2>
@@ -97,7 +97,7 @@ const StepLayout = ({ title, subtitle, icon: Icon, children, tip }) => (
 const SourceBadge = ({ source }) => {
   const styles = {
     document: { bg: 'bg-purple-50', text: 'text-purple-700', icon: FileText, label: 'From Document' },
-    lookup: { bg: 'bg-blue-50', text: 'text-blue-700', icon: Search, label: 'Public Records' },
+    lookup: { bg: 'bg-hb-teal-50', text: 'text-hb-teal-700', icon: Search, label: 'Public Records' },
     manual: { bg: 'bg-gray-50', text: 'text-gray-600', icon: Edit3, label: 'Manual Entry' },
     unverified: { bg: 'bg-amber-50', text: 'text-amber-700', icon: AlertCircle, label: 'Needs Verification' },
   };
@@ -123,7 +123,7 @@ const WelcomeStep = ({ onNext }) => (
     className="max-w-2xl mx-auto px-4 text-center"
   >
     <div className="mb-8">
-      <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+      <div className="w-20 h-20 bg-hb-teal rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
         <Home className="w-10 h-10 text-white" strokeWidth={1.5} />
       </div>
       <h1 className="text-4xl font-light text-gray-900 tracking-tight mb-3">
@@ -145,8 +145,8 @@ const WelcomeStep = ({ onNext }) => (
         { icon: CheckCircle2, label: 'Review & verify', desc: 'Confirm what\'s right, fill in the gaps' },
       ].map(({ icon: Icon, label, desc }, i) => (
         <div key={i} className="flex items-center gap-4 text-left p-3 bg-white rounded-xl border border-gray-100">
-          <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Icon className="w-5 h-5 text-blue-600" />
+          <div className="w-10 h-10 bg-hb-teal-50 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Icon className="w-5 h-5 text-hb-teal" />
           </div>
           <div>
             <p className="text-sm font-medium text-gray-900">{label}</p>
@@ -159,7 +159,7 @@ const WelcomeStep = ({ onNext }) => (
     <div className="space-y-4 max-w-sm mx-auto">
       <button
         onClick={onNext}
-        className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-2xl transition-colors font-semibold text-lg shadow-lg"
+        className="w-full flex items-center justify-center gap-3 bg-hb-teal hover:bg-hb-teal-700 text-white py-4 px-6 rounded-2xl transition-colors font-semibold text-lg shadow-lg"
       >
         Get Started
         <ArrowRight className="w-5 h-5" />
@@ -190,9 +190,10 @@ const AddressLookupStep = ({ data, onChange }) => {
     setLookupLoading(true);
     try {
       const fullAddress = `${p.address}, ${p.city}, ${p.state} ${p.zip}`.trim();
-      // AI property lookup is temporarily disabled while migrating backends.
-      // For now, skip to manual entry.
-      toast.info('Auto-lookup coming soon — please enter details manually for now.');
+      // AI property lookup will be added in a future release.
+      // For now, accept the address and let the user continue.
+      toast.success('Address saved! Continue to add your home details.');
+      setLookupDone(true);
       setLookupLoading(false);
       return;
       const response = '';
@@ -271,7 +272,7 @@ const AddressLookupStep = ({ data, onChange }) => {
           <button
             onClick={doPropertyLookup}
             disabled={lookupLoading || !canLookup}
-            className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-2xl transition-all disabled:opacity-50 font-medium shadow-lg"
+            className="w-full flex items-center justify-center gap-3 py-4 bg-hb-teal hover:bg-hb-teal-700 text-white rounded-2xl transition-all disabled:opacity-50 font-medium shadow-lg"
           >
             {lookupLoading ? (
               <><Loader2 className="w-5 h-5 animate-spin" /> Searching public records...</>
@@ -292,54 +293,54 @@ const AddressLookupStep = ({ data, onChange }) => {
             animate={{ opacity: 1, y: 0 }}
           >
             {lookupResults?.property && Object.values(lookupResults.property).some(Boolean) ? (
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+              <div className="bg-hb-teal-50 border border-hb-teal-200 rounded-2xl p-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <CheckCircle2 className="w-6 h-6 text-blue-600" />
+                  <CheckCircle2 className="w-6 h-6 text-hb-teal" />
                   <div>
-                    <h3 className="font-semibold text-blue-900 text-sm">Property Data Found</h3>
-                    <p className="text-xs text-blue-600">From public records — verify and edit as needed</p>
+                    <h3 className="font-semibold text-hb-navy text-sm">Property Data Found</h3>
+                    <p className="text-xs text-hb-teal">From public records — verify and edit as needed</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {p.yearBuilt && (
                     <div className="bg-white/60 rounded-xl p-3">
-                      <p className="text-[10px] font-medium text-blue-500 uppercase tracking-wider">Year Built</p>
+                      <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Year Built</p>
                       <p className="text-lg font-semibold text-gray-900">{p.yearBuilt}</p>
                     </div>
                   )}
                   {p.sqft && (
                     <div className="bg-white/60 rounded-xl p-3">
-                      <p className="text-[10px] font-medium text-blue-500 uppercase tracking-wider">Square Feet</p>
+                      <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Square Feet</p>
                       <p className="text-lg font-semibold text-gray-900">{p.sqft}</p>
                     </div>
                   )}
                   {p.bedrooms && (
                     <div className="bg-white/60 rounded-xl p-3">
-                      <p className="text-[10px] font-medium text-blue-500 uppercase tracking-wider">Bedrooms</p>
+                      <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Bedrooms</p>
                       <p className="text-lg font-semibold text-gray-900">{p.bedrooms}</p>
                     </div>
                   )}
                   {p.bathrooms && (
                     <div className="bg-white/60 rounded-xl p-3">
-                      <p className="text-[10px] font-medium text-blue-500 uppercase tracking-wider">Bathrooms</p>
+                      <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Bathrooms</p>
                       <p className="text-lg font-semibold text-gray-900">{p.bathrooms}</p>
                     </div>
                   )}
                   {p.stories && (
                     <div className="bg-white/60 rounded-xl p-3">
-                      <p className="text-[10px] font-medium text-blue-500 uppercase tracking-wider">Stories</p>
+                      <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Stories</p>
                       <p className="text-lg font-semibold text-gray-900">{p.stories}</p>
                     </div>
                   )}
                   {p.lotSize && (
                     <div className="bg-white/60 rounded-xl p-3">
-                      <p className="text-[10px] font-medium text-blue-500 uppercase tracking-wider">Lot Size</p>
+                      <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Lot Size</p>
                       <p className="text-lg font-semibold text-gray-900">{p.lotSize} acres</p>
                     </div>
                   )}
                 </div>
                 {lookupResults.taxAssessorNotes && (
-                  <p className="text-xs text-blue-700 mt-3 italic">{lookupResults.taxAssessorNotes}</p>
+                  <p className="text-xs text-hb-teal-700 mt-3 italic">{lookupResults.taxAssessorNotes}</p>
                 )}
               </div>
             ) : (
@@ -639,7 +640,7 @@ const DocumentUploadStep = ({ data, onChange }) => {
               {documents.map(doc => (
                 <div key={doc.id} className="flex items-center justify-between p-3 bg-white rounded-xl text-sm">
                   <div className="flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-blue-500" />
+                    <Upload className="w-4 h-4 text-hb-teal" />
                     <span className="text-gray-700 truncate">{doc.name}</span>
                     <span className="text-xs text-gray-400">({DOCUMENT_TYPES.find(d => d.value === doc.type)?.label})</span>
                   </div>
@@ -669,7 +670,7 @@ const DocumentUploadStep = ({ data, onChange }) => {
           <button
             onClick={processAllDocuments}
             disabled={processingAll}
-            className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-2xl transition-all disabled:opacity-60 font-semibold text-lg shadow-lg"
+            className="w-full flex items-center justify-center gap-3 py-4 bg-hb-teal hover:bg-hb-teal-700 text-white rounded-2xl transition-all disabled:opacity-60 font-semibold text-lg shadow-lg"
           >
             {processingAll ? (
               <><Loader2 className="w-5 h-5 animate-spin" /> Extracting data from {totalDocs} document{totalDocs > 1 ? 's' : ''}...</>
@@ -820,11 +821,11 @@ const ReviewVerifyStep = ({ data, onChange }) => {
             <h3 className="font-semibold text-gray-900 text-sm">Profile Completeness</h3>
             <p className="text-xs text-gray-500">{completion.overall.completed} of {completion.overall.total} data points</p>
           </div>
-          <span className="text-2xl font-light text-blue-600">{completion.overall.percentage}%</span>
+          <span className="text-2xl font-light text-hb-teal">{completion.overall.percentage}%</span>
         </div>
         <div className="w-full bg-gray-100 rounded-full h-2.5">
           <div
-            className="h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-700"
+            className="h-2.5 rounded-full bg-hb-teal transition-all duration-700"
             style={{ width: `${completion.overall.percentage}%` }}
           />
         </div>
@@ -855,10 +856,10 @@ const ReviewVerifyStep = ({ data, onChange }) => {
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    comp.pct === 100 ? 'bg-green-50' : comp.pct > 0 ? 'bg-blue-50' : 'bg-gray-50'
+                    comp.pct === 100 ? 'bg-green-50' : comp.pct > 0 ? 'bg-hb-teal-50' : 'bg-gray-50'
                   }`}>
                     <Icon className={`w-5 h-5 ${
-                      comp.pct === 100 ? 'text-green-600' : comp.pct > 0 ? 'text-blue-600' : 'text-gray-400'
+                      comp.pct === 100 ? 'text-green-600' : comp.pct > 0 ? 'text-hb-teal' : 'text-gray-400'
                     }`} />
                   </div>
                   <div className="text-left">
@@ -866,7 +867,7 @@ const ReviewVerifyStep = ({ data, onChange }) => {
                     <div className="flex items-center gap-2">
                       <div className="w-20 bg-gray-100 rounded-full h-1">
                         <div
-                          className={`h-1 rounded-full ${comp.pct === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                          className={`h-1 rounded-full ${comp.pct === 100 ? 'bg-green-500' : 'bg-hb-teal'}`}
                           style={{ width: `${comp.pct}%` }}
                         />
                       </div>
@@ -1073,10 +1074,10 @@ const CompleteStep = ({ data }) => {
           <p className="text-2xl font-light text-purple-900">{docCount}</p>
           <p className="text-xs text-purple-600">Documents</p>
         </div>
-        <div className="bg-blue-50 rounded-2xl p-4 text-center">
-          <Layers className="w-6 h-6 text-blue-600 mx-auto mb-1" />
-          <p className="text-2xl font-light text-blue-900">{roomCount}</p>
-          <p className="text-xs text-blue-600">Rooms</p>
+        <div className="bg-hb-teal-50 rounded-2xl p-4 text-center">
+          <Layers className="w-6 h-6 text-hb-teal mx-auto mb-1" />
+          <p className="text-2xl font-light text-hb-navy">{roomCount}</p>
+          <p className="text-xs text-hb-teal">Rooms</p>
         </div>
         <div className="bg-green-50 rounded-2xl p-4 text-center">
           <Refrigerator className="w-6 h-6 text-green-600 mx-auto mb-1" />
@@ -1098,14 +1099,14 @@ const CompleteStep = ({ data }) => {
           if (!sec) return null;
           return (
             <div key={key} className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl">
-              <Icon className={`w-5 h-5 ${sec.percentage === 100 ? 'text-green-600' : sec.percentage > 0 ? 'text-blue-600' : 'text-gray-400'}`} />
+              <Icon className={`w-5 h-5 ${sec.percentage === 100 ? 'text-green-600' : sec.percentage > 0 ? 'text-hb-teal' : 'text-gray-400'}`} />
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-0.5">
                   <p className="text-sm font-medium text-gray-900">{label}</p>
                   <span className="text-xs text-gray-400">{sec.completed}/{sec.total}</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-1">
-                  <div className={`h-1 rounded-full ${sec.percentage === 100 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${sec.percentage}%` }} />
+                  <div className={`h-1 rounded-full ${sec.percentage === 100 ? 'bg-green-500' : 'bg-hb-teal'}`} style={{ width: `${sec.percentage}%` }} />
                 </div>
               </div>
               {sec.percentage === 100 && <Check className="w-4 h-4 text-green-500" />}
@@ -1294,13 +1295,13 @@ export default function Onboarding() {
   const isFirstStep = currentStep === 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+    <div className="min-h-screen bg-hb-warm">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-hb-teal rounded-lg flex items-center justify-center">
                 <Home className="w-4 h-4 text-white" />
               </div>
               <span className="font-semibold text-gray-900 text-sm tracking-tight">HOMEBASE SETUP</span>
@@ -1355,7 +1356,7 @@ export default function Onboarding() {
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50 ${
                   isLastStep
                     ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-hb-teal hover:bg-hb-teal-700 text-white'
                 }`}
               >
                 {saving ? (
