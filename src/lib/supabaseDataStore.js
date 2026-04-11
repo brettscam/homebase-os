@@ -17,27 +17,14 @@ export async function getActiveProperty(userId) {
 }
 
 export async function getUserProperties(userId) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const { data, error } = await supabase
+    .from('properties')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
 
-  try {
-    const { data, error } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true })
-      .abortSignal(controller.signal);
-
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      throw new Error('Properties query timed out — check Supabase connection and API keys');
-    }
-    throw err;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  if (error) throw error;
+  return data || [];
 }
 
 export async function createProperty(userId, propertyData) {
@@ -495,7 +482,7 @@ export async function loadFullHomeData(propertyId) {
       data[keys[i]] = result.value;
     } else {
       console.warn(`Failed to load ${keys[i]}:`, result.reason?.message || result.reason);
-      data[keys[i]] = Array.isArray(result.value) ? [] : null;
+      data[keys[i]] = [];
     }
   });
   return data;
