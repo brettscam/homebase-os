@@ -24,32 +24,32 @@ BEGIN
 
 -- ─── Property ──────────────────────────────────────────────
 INSERT INTO properties (id, user_id, name, address, city, state, zip, year_built, sqft, lot_size, stories, bedrooms, bathrooms, is_active, onboarding_complete)
-VALUES (uuid_generate_v4(), v_user_id, 'Demo Home', '742 Evergreen Terrace', 'Springfield', 'IL', '62704', '1998', '2400', '0.25 acres', '2', '4', '2.5', true, true)
+VALUES (gen_random_uuid(), v_user_id, 'Demo Home', '742 Evergreen Terrace', 'Springfield', 'IL', '62704', '1998', '2400', '0.25 acres', '2', '4', '2.5', true, true)
 RETURNING id INTO v_property_id;
 
 -- ─── Rooms ─────────────────────────────────────────────────
 INSERT INTO rooms (id, property_id, name, type, floor, notes)
-VALUES (uuid_generate_v4(), v_property_id, 'Kitchen', 'kitchen', '1', 'Updated 2019 with granite countertops')
+VALUES (gen_random_uuid(), v_property_id, 'Kitchen', 'kitchen', '1', 'Updated 2019 with granite countertops')
 RETURNING id INTO v_kitchen_id;
 
 INSERT INTO rooms (id, property_id, name, type, floor, notes)
-VALUES (uuid_generate_v4(), v_property_id, 'Master Bedroom', 'bedroom', '2', 'Walk-in closet, ceiling fan')
+VALUES (gen_random_uuid(), v_property_id, 'Master Bedroom', 'bedroom', '2', 'Walk-in closet, ceiling fan')
 RETURNING id INTO v_master_bed_id;
 
 INSERT INTO rooms (id, property_id, name, type, floor, notes)
-VALUES (uuid_generate_v4(), v_property_id, 'Living Room', 'living', '1', 'Hardwood floors, fireplace')
+VALUES (gen_random_uuid(), v_property_id, 'Living Room', 'living', '1', 'Hardwood floors, fireplace')
 RETURNING id INTO v_living_id;
 
 INSERT INTO rooms (id, property_id, name, type, floor, notes)
-VALUES (uuid_generate_v4(), v_property_id, 'Garage', 'garage', '1', '2-car attached garage')
+VALUES (gen_random_uuid(), v_property_id, 'Garage', 'garage', '1', '2-car attached garage')
 RETURNING id INTO v_garage_id;
 
 INSERT INTO rooms (id, property_id, name, type, floor, notes)
-VALUES (uuid_generate_v4(), v_property_id, 'Master Bathroom', 'bathroom', '2', 'Double vanity, walk-in shower')
+VALUES (gen_random_uuid(), v_property_id, 'Master Bathroom', 'bathroom', '2', 'Double vanity, walk-in shower')
 RETURNING id INTO v_master_bath_id;
 
 INSERT INTO rooms (id, property_id, name, type, floor, notes)
-VALUES (uuid_generate_v4(), v_property_id, 'Laundry Room', 'utility', '1', 'Off the kitchen')
+VALUES (gen_random_uuid(), v_property_id, 'Laundry Room', 'utility', '1', 'Off the kitchen')
 RETURNING id INTO v_laundry_id;
 
 -- ─── Appliances ────────────────────────────────────────────

@@ -3,8 +3,7 @@
 -- Run this in your Supabase SQL Editor (Dashboard > SQL Editor)
 -- ============================================================
 
--- Enable UUID extension
-create extension if not exists "uuid-ossp";
+-- gen_random_uuid() is built-in to Supabase (Postgres 15+), no extension needed.
 
 -- ─── Profiles ───────────────────────────────────────────────
 -- Extends Supabase auth.users with app-specific data
@@ -38,7 +37,7 @@ create trigger on_auth_user_created
 -- ─── Properties ─────────────────────────────────────────────
 -- A user can have multiple properties
 create table properties (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   user_id uuid references profiles(id) on delete cascade not null,
   name text default 'My Home',
   address text,
@@ -59,7 +58,7 @@ create table properties (
 
 -- ─── Rooms ──────────────────────────────────────────────────
 create table rooms (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   name text not null,
   type text, -- bedroom, bathroom, kitchen, living, etc.
@@ -73,7 +72,7 @@ create table rooms (
 
 -- ─── Appliances ─────────────────────────────────────────────
 create table appliances (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   room_id uuid references rooms(id) on delete set null,
   name text not null,
@@ -92,7 +91,7 @@ create table appliances (
 -- ─── Systems ────────────────────────────────────────────────
 -- Major home systems (HVAC, water heater, electrical, plumbing)
 create table systems (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   type text not null, -- hvac, water_heater, electrical, plumbing
   data jsonb default '{}'::jsonb, -- flexible key-value for system-specific fields
@@ -102,7 +101,7 @@ create table systems (
 
 -- ─── Paint Records ──────────────────────────────────────────
 create table paint_records (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   room_id uuid references rooms(id) on delete set null,
   room_name text,
@@ -118,7 +117,7 @@ create table paint_records (
 
 -- ─── Smart Home ─────────────────────────────────────────────
 create table smart_home (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   type text not null, -- wifi, door_lock, security, garage
   data jsonb default '{}'::jsonb,
@@ -128,7 +127,7 @@ create table smart_home (
 
 -- ─── Emergency Info ─────────────────────────────────────────
 create table emergency_info (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   type text not null, -- water_shutoff, gas_shutoff, electrical_panel, contact
   data jsonb default '{}'::jsonb,
@@ -138,7 +137,7 @@ create table emergency_info (
 
 -- ─── Exterior ───────────────────────────────────────────────
 create table exterior (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   type text not null, -- roof, gutters, siding
   data jsonb default '{}'::jsonb,
@@ -149,7 +148,7 @@ create table exterior (
 -- ─── Contacts ───────────────────────────────────────────────
 -- Contractors, service providers, etc.
 create table contacts (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   name text not null,
   company text,
@@ -166,7 +165,7 @@ create table contacts (
 
 -- ─── Utilities ──────────────────────────────────────────────
 create table utilities (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   type text not null, -- electric, gas, water, sewer, internet, trash
   provider text,
@@ -182,7 +181,7 @@ create table utilities (
 -- ─── Energy Bills ───────────────────────────────────────────
 -- For Insights tab — tracks consumption over time
 create table energy_bills (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   utility_type text not null, -- electric, gas, water
   billing_period_start date,
@@ -198,7 +197,7 @@ create table energy_bills (
 
 -- ─── Documents ──────────────────────────────────────────────
 create table documents (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   name text not null,
   type text, -- warranty, manual, receipt, inspection, permit, etc.
@@ -213,7 +212,7 @@ create table documents (
 -- ─── Projects ───────────────────────────────────────────────
 -- Full project lifecycle (planning → quoting → comparing → in_progress → complete)
 create table projects (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   title text not null,
   description text,
@@ -236,7 +235,7 @@ create table projects (
 
 -- ─── Project Quotes ─────────────────────────────────────────
 create table project_quotes (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   project_id uuid references projects(id) on delete cascade not null,
   vendor_contact_id uuid references contacts(id) on delete set null,
   vendor_name text, -- in case no contact linked
@@ -254,7 +253,7 @@ create table project_quotes (
 
 -- ─── Project Vendors (tracking outreach) ────────────────────
 create table project_vendors (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   project_id uuid references projects(id) on delete cascade not null,
   contact_id uuid references contacts(id) on delete set null,
   vendor_name text,
@@ -267,7 +266,7 @@ create table project_vendors (
 -- ─── Integrations ───────────────────────────────────────────
 -- Tracks connected services (energy providers, smart home, etc.)
 create table integrations (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   property_id uuid references properties(id) on delete cascade not null,
   type text not null, -- energy_provider, smart_home, thermostat
   provider text, -- PG&E, Nest, Ring, etc.
@@ -280,7 +279,7 @@ create table integrations (
 
 -- ─── Chat History ───────────────────────────────────────────
 create table chat_conversations (
-  id uuid default uuid_generate_v4() primary key,
+  id uuid default gen_random_uuid() primary key,
   user_id uuid references profiles(id) on delete cascade not null,
   property_id uuid references properties(id) on delete set null,
   title text default 'New Chat',
