@@ -482,7 +482,7 @@ export async function loadFullHomeData(propertyId) {
       data[keys[i]] = result.value;
     } else {
       console.warn(`Failed to load ${keys[i]}:`, result.reason?.message || result.reason);
-      data[keys[i]] = Array.isArray(result.value) ? [] : null;
+      data[keys[i]] = [];
     }
   });
   return data;

@@ -34,20 +34,27 @@ export const PropertyProvider = ({ children }) => {
       resolved.current = false;
       setError(null);
 
+      console.log('[PropertyContext] Loading properties for user:', user.id);
+
       const properties = await getUserProperties(user.id);
+      console.log('[PropertyContext] Got properties:', properties.length);
+
       setAllProperties(properties);
 
       if (properties.length > 0) {
         const active = properties.find(p => p.is_active) || properties[0];
         setActiveProperty(active);
+        console.log('[PropertyContext] Loading home data for property:', active.id);
         const data = await loadFullHomeData(active.id);
+        console.log('[PropertyContext] Home data loaded');
         setHomeData(data);
       } else {
+        console.log('[PropertyContext] No properties found — new user');
         setActiveProperty(null);
         setHomeData(null);
       }
     } catch (err) {
-      console.error('Failed to load properties:', err);
+      console.error('[PropertyContext] Failed to load:', err);
       setError(err.message || 'Failed to load properties');
     } finally {
       resolveLoading();
@@ -59,11 +66,11 @@ export const PropertyProvider = ({ children }) => {
       // Safety timeout — never stay on loading screen forever
       const timeout = setTimeout(() => {
         if (!resolved.current) {
-          console.warn('Property loading timed out after 12s');
-          setError('Loading timed out. Please refresh the page.');
+          console.warn('[PropertyContext] Loading timed out after 15s');
+          setError('Loading timed out. Check your internet connection and try again.');
           resolveLoading();
         }
-      }, 12000);
+      }, 15000);
 
       refreshProperties();
 
@@ -86,7 +93,7 @@ export const PropertyProvider = ({ children }) => {
       const data = await loadFullHomeData(prop.id);
       setHomeData(data);
     } catch (err) {
-      console.error('Failed to load property data:', err);
+      console.error('[PropertyContext] Failed to load property data:', err);
       setError(err.message || 'Failed to load property data');
     } finally {
       resolveLoading();
