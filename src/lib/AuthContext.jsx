@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
         console.error('Session check failed:', error);
         setAuthError({ type: 'unknown', message: error.message });
       } else if (session?.user) {
-        setUser(session.user);
+        setUser(prev => prev?.id === session.user.id ? prev : session.user);
         setIsAuthenticated(true);
         await loadProfile(session.user.id);
       }
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
-          setUser(session.user);
+          setUser(prev => prev?.id === session.user.id ? prev : session.user);
           setIsAuthenticated(true);
           await loadProfile(session.user.id);
         } else {
