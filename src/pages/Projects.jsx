@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // base44 LLM integration removed — AI features will use a new backend
 import {
@@ -10,7 +10,9 @@ import {
   Filter, SortAsc
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getHomeData, saveHomeData, generateId } from '../lib/homeDataStore';
+import { useProperty } from '../lib/PropertyContext';
+import { useAuth } from '../lib/AuthContext';
+import { upsertProject, deleteProject, systemsArrayToLegacy } from '../lib/supabaseDataStore';
 
 // ─── Component Categories & Lifespans ────────────────────────────────
 const COMPONENT_CATEGORIES = [
@@ -143,7 +145,6 @@ const AISuggestionBanner = ({ components, onAddSuggested }) => {
   const generateSuggestions = async () => {
     setLoading(true);
     try {
-      const homeData = getHomeData();
       const componentSummary = components.map(c => {
         const remaining = getYearsRemaining(c.installYear, c.lifespanYears);
         return `${c.name}: installed ${c.installYear}, ${remaining !== null ? remaining + ' years remaining' : 'unknown age'}, est. cost $${c.estimatedCost || '?'}`;
@@ -277,7 +278,6 @@ const ComponentModal = ({ component, onSave, onClose }) => {
     }
     onSave({
       ...form,
-      id: form.id || generateId(),
       lifespanYears: parseInt(form.lifespanYears) || category?.defaultLifespan || 20,
       estimatedCost: form.estimatedCost,
     });
@@ -705,11 +705,13 @@ const SummaryStats = ({ components }) => {
 };
 
 // ─── Import from Home Data ──────────────────────────────────────────
-const ImportFromHomeData = ({ onImport, existingComponents }) => {
+const ImportFromHomeData = ({ onImport, existingComponents, homeData }) => {
   const [loading, setLoading] = useState(false);
-  const homeData = getHomeData();
 
-  const canImport = homeData.onboardingComplete || homeData.systems?.hvac?.brand || homeData.appliances?.length > 0;
+  const systems = systemsArrayToLegacy(homeData?.systems || []);
+  const appliances = homeData?.appliances || [];
+
+  const canImport = systems.hvac?.brand || systems.hvac?.type || systems.waterHeater?.brand || systems.waterHeater?.type || systems.electrical?.amperage || appliances.length > 0;
 
   if (!canImport || existingComponents.length > 0) return null;
 
@@ -719,84 +721,62 @@ const ImportFromHomeData = ({ onImport, existingComponents }) => {
       const imported = [];
 
       // Import from systems
-      if (homeData.systems?.hvac?.brand || homeData.systems?.hvac?.type) {
+      if (systems.hvac?.brand || systems.hvac?.type) {
         imported.push({
-          id: generateId(),
-          name: `${homeData.systems.hvac.brand || ''} HVAC`.trim(),
+          name: `${systems.hvac.brand || ''} HVAC`.trim(),
           category: 'hvac',
-          subtype: homeData.systems.hvac.type || '',
-          brand: homeData.systems.hvac.brand || '',
-          model: homeData.systems.hvac.model || '',
-          installYear: homeData.systems.hvac.installDate?.slice(0, 4) || '',
+          subtype: systems.hvac.type || '',
+          brand: systems.hvac.brand || '',
+          model: systems.hvac.model || '',
+          installYear: systems.hvac.installDate?.slice(0, 4) || '',
           lifespanYears: 15,
           location: '',
           notes: '',
           estimatedCost: '',
         });
       }
-      if (homeData.systems?.waterHeater?.brand || homeData.systems?.waterHeater?.type) {
+      if (systems.waterHeater?.brand || systems.waterHeater?.type) {
         imported.push({
-          id: generateId(),
-          name: `${homeData.systems.waterHeater.brand || ''} Water Heater`.trim(),
+          name: `${systems.waterHeater.brand || ''} Water Heater`.trim(),
           category: 'water_heater',
-          subtype: homeData.systems.waterHeater.type || '',
-          brand: homeData.systems.waterHeater.brand || '',
-          model: homeData.systems.waterHeater.model || '',
-          installYear: homeData.systems.waterHeater.installDate?.slice(0, 4) || '',
-          lifespanYears: homeData.systems.waterHeater.type === 'tankless' ? 20 : 10,
+          subtype: systems.waterHeater.type || '',
+          brand: systems.waterHeater.brand || '',
+          model: systems.waterHeater.model || '',
+          installYear: systems.waterHeater.installDate?.slice(0, 4) || '',
+          lifespanYears: systems.waterHeater.type === 'tankless' ? 20 : 10,
           location: '',
-          notes: homeData.systems.waterHeater.capacity ? `${homeData.systems.waterHeater.capacity} capacity` : '',
+          notes: systems.waterHeater.capacity ? `${systems.waterHeater.capacity} capacity` : '',
           estimatedCost: '',
         });
       }
-      if (homeData.systems?.electrical?.amperage) {
+      if (systems.electrical?.amperage) {
         imported.push({
-          id: generateId(),
-          name: `${homeData.systems.electrical.amperage}A Electrical Panel`,
+          name: `${systems.electrical.amperage}A Electrical Panel`,
           category: 'electrical',
           brand: '',
           model: '',
-          installYear: homeData.property?.yearBuilt || '',
+          installYear: '',
           lifespanYears: 40,
-          location: homeData.systems.electrical.panelLocation || '',
-          notes: homeData.systems.electrical.circuits ? `${homeData.systems.electrical.circuits} circuits` : '',
-          estimatedCost: '',
-        });
-      }
-      if (homeData.exterior?.roof?.material) {
-        const roofType = homeData.exterior.roof.material?.toLowerCase().includes('asphalt') ? 'asphalt' :
-          homeData.exterior.roof.material?.toLowerCase().includes('metal') ? 'metal' :
-          homeData.exterior.roof.material?.toLowerCase().includes('tile') ? 'tile' : 'asphalt';
-        const cat = COMPONENT_CATEGORIES.find(c => c.id === 'roof');
-        imported.push({
-          id: generateId(),
-          name: `${homeData.exterior.roof.material} Roof`,
-          category: 'roof',
-          subtype: roofType,
-          brand: '',
-          model: '',
-          installYear: homeData.exterior.roof.installDate?.slice(0, 4) || '',
-          lifespanYears: cat.lifespanYears[roofType] || 25,
-          location: '',
-          notes: homeData.exterior.roof.type || '',
+          location: systems.electrical.panelLocation || '',
+          notes: systems.electrical.circuits ? `${systems.electrical.circuits} circuits` : '',
           estimatedCost: '',
         });
       }
 
       // Import appliances
-      (homeData.appliances || []).forEach(app => {
+      appliances.forEach(app => {
+        const appData = app.data || app;
         imported.push({
-          id: generateId(),
-          name: `${app.brand || ''} ${app.type || 'Appliance'}`.trim(),
+          name: `${appData.brand || ''} ${appData.type || 'Appliance'}`.trim(),
           category: 'appliance',
-          subtype: app.type?.toLowerCase().replace(/\s/g, '_') || '',
-          brand: app.brand || '',
-          model: app.model || '',
-          installYear: app.installDate?.slice(0, 4) || '',
+          subtype: appData.type?.toLowerCase().replace(/\s/g, '_') || '',
+          brand: appData.brand || '',
+          model: appData.model || '',
+          installYear: appData.installDate?.slice(0, 4) || '',
           lifespanYears: COMPONENT_CATEGORIES.find(c => c.id === 'appliance')
-            ?.lifespanYears[app.type?.toLowerCase().replace(/\s/g, '_')] || 12,
-          location: app.room || '',
-          notes: app.notes || '',
+            ?.lifespanYears[appData.type?.toLowerCase().replace(/\s/g, '_')] || 12,
+          location: appData.room || '',
+          notes: appData.notes || '',
           estimatedCost: '',
         });
       });
@@ -840,46 +820,82 @@ const ImportFromHomeData = ({ onImport, existingComponents }) => {
   );
 };
 
+// ─── Parse metadata from description JSON ──────────────────────────
+const parseMetadata = (desc) => { try { return JSON.parse(desc); } catch { return {}; } };
+
 // ═══════════════════════════════════════════════════════════════════════
 //  MAIN PROJECTS PAGE
 // ═══════════════════════════════════════════════════════════════════════
 export default function Projects() {
-  const [components, setComponents] = useState([]);
+  const { activeProperty, homeData, refreshProperties } = useProperty();
   const [view, setView] = useState('cards'); // cards | timeline
   const [showModal, setShowModal] = useState(false);
   const [editingComponent, setEditingComponent] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('urgency');
 
-  // Load from localStorage
-  useEffect(() => {
+  // Derive components from Supabase projects
+  const components = (homeData?.projects || []).map(p => {
+    const meta = parseMetadata(p.description);
+    return {
+      id: p.id,
+      name: p.title,
+      category: p.category,
+      subtype: meta.subtype || '',
+      installYear: p.target_start_date ? p.target_start_date.split('-')[0] : '',
+      lifespanYears: meta.lifespanYears || 20,
+      brand: meta.brand || '',
+      model: meta.model || '',
+      estimatedCost: p.budget_max ? String(p.budget_max) : '',
+      notes: p.notes || '',
+      location: meta.location || '',
+      warrantyExpiry: meta.warrantyExpiry || '',
+      lastServiceDate: meta.lastServiceDate || '',
+    };
+  });
+
+  const handleSave = async (component) => {
     try {
-      const raw = localStorage.getItem('homebase_components');
-      if (raw) setComponents(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem('homebase_components', JSON.stringify(components));
-  }, [components]);
-
-  const handleSave = (component) => {
-    setComponents(prev => {
-      const exists = prev.find(c => c.id === component.id);
-      if (exists) {
-        return prev.map(c => c.id === component.id ? component : c);
+      const metadata = {
+        subtype: component.subtype,
+        lifespanYears: parseInt(component.lifespanYears) || 20,
+        brand: component.brand,
+        model: component.model,
+        location: component.location,
+        warrantyExpiry: component.warrantyExpiry,
+        lastServiceDate: component.lastServiceDate,
+      };
+      const dbProject = {
+        property_id: activeProperty.id,
+        title: component.name,
+        category: component.category,
+        description: JSON.stringify(metadata),
+        budget_max: parseFloat(String(component.estimatedCost).replace(/[^0-9.]/g, '')) || null,
+        target_start_date: component.installYear ? `${component.installYear}-01-01` : null,
+        notes: component.notes || null,
+        status: 'tracking',
+      };
+      if (component.id) {
+        dbProject.id = component.id;
       }
-      return [...prev, component];
-    });
-    setShowModal(false);
-    setEditingComponent(null);
-    toast.success(editingComponent ? 'Component updated' : 'Component added');
+      await upsertProject(dbProject);
+      await refreshProperties();
+      setShowModal(false);
+      setEditingComponent(null);
+      toast.success(editingComponent ? 'Component updated' : 'Component added');
+    } catch (err) {
+      toast.error('Failed to save component');
+    }
   };
 
-  const handleDelete = (id) => {
-    setComponents(prev => prev.filter(c => c.id !== id));
-    toast.success('Component removed');
+  const handleDelete = async (id) => {
+    try {
+      await deleteProject(id);
+      await refreshProperties();
+      toast.success('Component removed');
+    } catch (err) {
+      toast.error('Failed to delete component');
+    }
   };
 
   const handleEdit = (component) => {
@@ -887,8 +903,34 @@ export default function Projects() {
     setShowModal(true);
   };
 
-  const handleImport = (imported) => {
-    setComponents(prev => [...prev, ...imported]);
+  const handleImport = async (imported) => {
+    try {
+      for (const comp of imported) {
+        const metadata = {
+          subtype: comp.subtype,
+          lifespanYears: parseInt(comp.lifespanYears) || 20,
+          brand: comp.brand,
+          model: comp.model,
+          location: comp.location,
+          warrantyExpiry: comp.warrantyExpiry || '',
+          lastServiceDate: comp.lastServiceDate || '',
+        };
+        const dbProject = {
+          property_id: activeProperty.id,
+          title: comp.name,
+          category: comp.category,
+          description: JSON.stringify(metadata),
+          budget_max: parseFloat(String(comp.estimatedCost).replace(/[^0-9.]/g, '')) || null,
+          target_start_date: comp.installYear ? `${comp.installYear}-01-01` : null,
+          notes: comp.notes || null,
+          status: 'tracking',
+        };
+        await upsertProject(dbProject);
+      }
+      await refreshProperties();
+    } catch (err) {
+      toast.error('Failed to import components');
+    }
   };
 
   // Filter + Sort
@@ -926,7 +968,7 @@ export default function Projects() {
         </motion.div>
 
         {/* Import from Home Data */}
-        <ImportFromHomeData onImport={handleImport} existingComponents={components} />
+        <ImportFromHomeData onImport={handleImport} existingComponents={components} homeData={homeData} />
 
         {/* AI Suggestions */}
         <AISuggestionBanner components={components} />

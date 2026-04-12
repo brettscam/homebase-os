@@ -256,7 +256,7 @@ const AddressLookupStep = ({ data, onChange }) => {
   return (
     <StepLayout
       title="Your Address"
-      subtitle="Enter your address and we'll pull what we can from public records"
+      subtitle="Enter your home address to get started"
       icon={MapPin}
     >
       <div className="space-y-5">
@@ -267,23 +267,14 @@ const AddressLookupStep = ({ data, onChange }) => {
           <Field label="ZIP" value={p.zip} onChange={v => update('zip', v)} placeholder="94941" />
         </div>
 
-        {/* Lookup Button */}
+        {/* Helper text — lookup replaced by Homer document processing */}
         {!lookupDone && (
-          <button
-            onClick={doPropertyLookup}
-            disabled={lookupLoading || !canLookup}
-            className="w-full flex items-center justify-center gap-3 py-4 bg-hb-teal hover:bg-hb-teal-700 text-white rounded-2xl transition-all disabled:opacity-50 font-medium shadow-lg"
-          >
-            {lookupLoading ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Searching public records...</>
-            ) : (
-              <><Search className="w-5 h-5" /> Look Up Property</>
-            )}
-          </button>
-        )}
-
-        {!canLookup && !lookupDone && (
-          <p className="text-xs text-gray-400 text-center">Enter address, city, and state to enable lookup</p>
+          <div className="flex items-start gap-3 bg-hb-teal-50 border border-hb-teal-100 rounded-xl p-4">
+            <Sparkles className="w-5 h-5 text-hb-teal flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-hb-teal-700">
+              Upload an appraisal or inspection report to Homer (Ask AI) to auto-fill property details after setup.
+            </p>
+          </div>
         )}
 
         {/* Lookup Results */}
@@ -418,8 +409,8 @@ const DocumentUploadStep = ({ data, onChange }) => {
         return `--- ${doc.label} ---\n${text}`;
       }).join('\n\n');
 
-      // AI document extraction is temporarily disabled while migrating backends.
-      toast.info('AI document extraction coming soon — data has been saved as-is for now.');
+      // AI document extraction handled by Homer (Ask AI tab) after onboarding.
+      toast.info('Documents saved! Use Homer (Ask AI) to extract data from your documents after setup.');
       setProcessingAll(false);
       return;
       const response = '';

@@ -106,7 +106,7 @@ const SpecRow = ({ label, value, sublabel }) => (
 
 // Main Application
 export default function HomeBaseManual() {
-  const { activeProperty, homeData: supaData } = useProperty();
+  const { activeProperty, homeData: supaData, refreshProperties } = useProperty();
   const [activeChapter, setActiveChapter] = useState('model3d');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -676,7 +676,7 @@ export default function HomeBaseManual() {
                             </p>
                           </div>
                         </div>
-                        <FuseBoxDiagram darkMode={false} />
+                        <FuseBoxDiagram darkMode={false} electricalData={legacySystems.electrical} />
                       </div>
                     )}
 
@@ -1021,7 +1021,7 @@ export default function HomeBaseManual() {
                             </p>
                           </div>
                         </div>
-                        <FuseBoxDiagram darkMode={true} />
+                        <FuseBoxDiagram darkMode={true} electricalData={legacySystems.electrical} />
                       </div>
                     )}
                   </div>
@@ -1073,6 +1073,8 @@ export default function HomeBaseManual() {
         isOpen={showAddInfoModal}
         onClose={() => setShowAddInfoModal(false)}
         section={selectedSection}
+        propertyId={activeProperty?.id}
+        onSave={refreshProperties}
       />
 
       {/* Search Overlay */}

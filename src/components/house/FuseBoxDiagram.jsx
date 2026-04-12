@@ -2,39 +2,25 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, X, Info } from 'lucide-react';
 
-const fuseMapping = [
-  { id: 1, label: 'Kitchen Outlets', amps: 20, rooms: ['Kitchen'], status: 'active' },
-  { id: 2, label: 'Kitchen Appliances', amps: 30, rooms: ['Kitchen'], status: 'active' },
-  { id: 3, label: 'Living Room Lights', amps: 15, rooms: ['Living Room'], status: 'active' },
-  { id: 4, label: 'Living Room Outlets', amps: 20, rooms: ['Living Room'], status: 'active' },
-  { id: 5, label: 'Master Bedroom', amps: 15, rooms: ['Master Bedroom'], status: 'active' },
-  { id: 6, label: 'Bedroom 2 & 3', amps: 15, rooms: ['Bedroom 2', 'Bedroom 3'], status: 'active' },
-  { id: 7, label: 'Bathroom Outlets', amps: 20, rooms: ['Bathroom'], status: 'active' },
-  { id: 8, label: 'HVAC System', amps: 30, rooms: ['Whole House'], status: 'active' },
-  { id: 9, label: 'Water Heater', amps: 30, rooms: ['Garage'], status: 'active' },
-  { id: 10, label: 'Garage Outlets', amps: 20, rooms: ['Garage'], status: 'active' },
-  { id: 11, label: 'Exterior Lights', amps: 15, rooms: ['Exterior'], status: 'active' },
-  { id: 12, label: 'Dining Room', amps: 15, rooms: ['Dining Room'], status: 'active' },
-  { id: 13, label: 'Washer/Dryer', amps: 30, rooms: ['Laundry'], status: 'active' },
-  { id: 14, label: 'Dishwasher', amps: 20, rooms: ['Kitchen'], status: 'active' },
-  { id: 15, label: 'Refrigerator', amps: 20, rooms: ['Kitchen'], status: 'active' },
-  { id: 16, label: 'Spare', amps: 20, rooms: [], status: 'inactive' },
-];
-
-export default function FuseBoxDiagram({ darkMode = false }) {
+export default function FuseBoxDiagram({ darkMode = false, electricalData }) {
   const [selectedFuse, setSelectedFuse] = useState(null);
 
-  const Fuse = ({ fuse, position }) => {
+  const breakers = electricalData?.breakers || [];
+  const mainAmperage = electricalData?.amperage || electricalData?.mainAmperage;
+  const panelLocation = electricalData?.panelLocation;
+  const hasData = breakers.length > 0;
+
+  const Fuse = ({ fuse }) => {
     const isSelected = selectedFuse?.id === fuse.id;
-    const isActive = fuse.status === 'active';
-    
+    const isActive = fuse.status !== 'inactive';
+
     return (
       <motion.button
         onClick={() => setSelectedFuse(fuse)}
         className={`relative ${
-          isActive 
-            ? darkMode 
-              ? 'bg-slate-700 hover:bg-slate-600' 
+          isActive
+            ? darkMode
+              ? 'bg-slate-700 hover:bg-slate-600'
               : 'bg-gray-100 hover:bg-gray-200'
             : darkMode
               ? 'bg-slate-800'
@@ -46,12 +32,12 @@ export default function FuseBoxDiagram({ darkMode = false }) {
         whileTap={{ scale: 0.95 }}
       >
         <div className="flex flex-col items-center gap-1">
-          <Zap 
+          <Zap
             className={`w-4 h-4 ${
-              isActive 
+              isActive
                 ? darkMode ? 'text-yellow-400' : 'text-yellow-600'
                 : darkMode ? 'text-slate-600' : 'text-gray-400'
-            }`} 
+            }`}
           />
           <span className={`text-xs font-mono font-semibold ${
             darkMode ? 'text-white' : 'text-gray-900'
@@ -90,64 +76,112 @@ export default function FuseBoxDiagram({ darkMode = false }) {
             <p className={`text-sm ${
               darkMode ? 'text-slate-400' : 'text-gray-600'
             }`}>
-              Tap any breaker to see details
+              {hasData ? 'Tap any breaker to see details' : 'Add breaker details to see full panel diagram'}
             </p>
           </div>
         </div>
 
-        {/* Main Panel Grid */}
-        <div className={`${
-          darkMode ? 'bg-slate-900' : 'bg-gray-50'
-        } rounded-xl p-6 mb-4`}>
-          <div className="grid grid-cols-4 gap-3 mb-4">
-            {fuseMapping.slice(0, 8).map((fuse, idx) => (
-              <Fuse key={fuse.id} fuse={fuse} position={idx} />
-            ))}
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            {fuseMapping.slice(8, 16).map((fuse, idx) => (
-              <Fuse key={fuse.id} fuse={fuse} position={idx + 8} />
-            ))}
-          </div>
-          
-          {/* Main Breaker */}
-          <div className="mt-6 pt-6 border-t border-gray-700">
+        {hasData ? (
+          <>
+            {/* Main Panel Grid */}
             <div className={`${
-              darkMode ? 'bg-red-900/30' : 'bg-red-50'
-            } rounded-lg p-4 text-center`}>
-              <p className={`text-xs font-medium ${
-                darkMode ? 'text-red-400' : 'text-red-600'
-              } mb-1`}>
-                MAIN BREAKER
-              </p>
-              <p className={`text-2xl font-bold ${
-                darkMode ? 'text-red-400' : 'text-red-600'
-              }`}>
-                200A
-              </p>
-            </div>
-          </div>
-        </div>
+              darkMode ? 'bg-slate-900' : 'bg-gray-50'
+            } rounded-xl p-6 mb-4`}>
+              <div className="grid grid-cols-4 gap-3 mb-4">
+                {breakers.slice(0, Math.ceil(breakers.length / 2)).map((fuse) => (
+                  <Fuse key={fuse.id} fuse={fuse} />
+                ))}
+              </div>
+              {breakers.length > 4 && (
+                <div className="grid grid-cols-4 gap-3">
+                  {breakers.slice(Math.ceil(breakers.length / 2)).map((fuse) => (
+                    <Fuse key={fuse.id} fuse={fuse} />
+                  ))}
+                </div>
+              )}
 
-        {/* Legend */}
-        <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <Zap className={`w-3 h-3 ${
-              darkMode ? 'text-yellow-400' : 'text-yellow-600'
-            }`} />
-            <span className={darkMode ? 'text-slate-400' : 'text-gray-600'}>
-              Active
-            </span>
+              {/* Main Breaker */}
+              {mainAmperage && (
+                <div className="mt-6 pt-6 border-t border-gray-700">
+                  <div className={`${
+                    darkMode ? 'bg-red-900/30' : 'bg-red-50'
+                  } rounded-lg p-4 text-center`}>
+                    <p className={`text-xs font-medium ${
+                      darkMode ? 'text-red-400' : 'text-red-600'
+                    } mb-1`}>
+                      MAIN BREAKER
+                    </p>
+                    <p className={`text-2xl font-bold ${
+                      darkMode ? 'text-red-400' : 'text-red-600'
+                    }`}>
+                      {mainAmperage}A
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-2">
+                <Zap className={`w-3 h-3 ${
+                  darkMode ? 'text-yellow-400' : 'text-yellow-600'
+                }`} />
+                <span className={darkMode ? 'text-slate-400' : 'text-gray-600'}>
+                  Active
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className={`w-3 h-3 ${
+                  darkMode ? 'text-slate-600' : 'text-gray-400'
+                }`} />
+                <span className={darkMode ? 'text-slate-400' : 'text-gray-600'}>
+                  Spare
+                </span>
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Empty state — show basic info if available */
+          <div className={`${
+            darkMode ? 'bg-slate-900' : 'bg-gray-50'
+          } rounded-xl p-8 text-center`}>
+            {mainAmperage || panelLocation ? (
+              <div className="space-y-3">
+                {mainAmperage && (
+                  <div className={`${
+                    darkMode ? 'bg-red-900/30' : 'bg-red-50'
+                  } rounded-lg p-4 inline-block`}>
+                    <p className={`text-xs font-medium ${
+                      darkMode ? 'text-red-400' : 'text-red-600'
+                    } mb-1`}>MAIN BREAKER</p>
+                    <p className={`text-2xl font-bold ${
+                      darkMode ? 'text-red-400' : 'text-red-600'
+                    }`}>{mainAmperage}A</p>
+                  </div>
+                )}
+                {panelLocation && (
+                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                    Panel location: {panelLocation}
+                  </p>
+                )}
+                <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-gray-400'} mt-2`}>
+                  Add breaker details to see the full panel diagram
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Zap className={`w-8 h-8 mx-auto ${darkMode ? 'text-slate-600' : 'text-gray-300'}`} />
+                <p className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                  No electrical panel data yet
+                </p>
+                <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>
+                  Add your electrical system details in the Mechanical section
+                </p>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <Zap className={`w-3 h-3 ${
-              darkMode ? 'text-slate-600' : 'text-gray-400'
-            }`} />
-            <span className={darkMode ? 'text-slate-400' : 'text-gray-600'}>
-              Spare
-            </span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Detail Panel */}
@@ -195,7 +229,7 @@ export default function FuseBoxDiagram({ darkMode = false }) {
               </button>
             </div>
 
-            {selectedFuse.rooms.length > 0 && (
+            {selectedFuse.rooms?.length > 0 && (
               <div>
                 <p className={`text-xs font-medium ${
                   darkMode ? 'text-slate-500' : 'text-gray-500'
@@ -217,7 +251,7 @@ export default function FuseBoxDiagram({ darkMode = false }) {
               </div>
             )}
 
-            {selectedFuse.rooms.length === 0 && (
+            {(!selectedFuse.rooms || selectedFuse.rooms.length === 0) && (
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Info className="w-4 h-4" />
                 <span>Spare breaker - not currently in use</span>

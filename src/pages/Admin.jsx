@@ -8,7 +8,9 @@ import {
   Home, MapPin, Settings, FileText, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getHomeData, getAdminData, saveAdminData, generateId, clearHomeData } from '../lib/homeDataStore';
+import { useProperty } from '../lib/PropertyContext';
+import { useAuth } from '../lib/AuthContext';
+import { createProperty, updateProperty, deleteProperty } from '../lib/supabaseDataStore';
 
 // ─── Property Card ────────────────────────────────────────────────────
 const PropertyCard = ({ property, isActive, onSwitch, onEdit, onDelete }) => {
@@ -133,7 +135,7 @@ const AddPropertyModal = ({ isOpen, onClose, onSave, editData }) => {
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600">Cancel</button>
           <button onClick={() => {
             if (!form.name.trim() || !form.address.trim()) { toast.error('Name and address are required'); return; }
-            onSave({ ...form, id: editData?.id || generateId(), dataStoreKey: editData?.dataStoreKey || `homebase_${generateId()}`, createdAt: editData?.createdAt || new Date().toISOString() });
+            onSave(form);
           }} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors">
             {editData ? 'Save' : 'Add Property'}
           </button>
@@ -145,71 +147,73 @@ const AddPropertyModal = ({ isOpen, onClose, onSave, editData }) => {
 
 // ─── Main Admin Page ──────────────────────────────────────────────────
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState('properties');
-  const [adminData, setAdminData] = useState(getAdminData());
+  const { activeProperty, allProperties, homeData, refreshProperties, switchProperty } = useProperty();
+  const { user } = useAuth();
   const [showPropertyModal, setShowPropertyModal] = useState(false);
   const [editingProperty, setEditingProperty] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [activeTab, setActiveTab] = useState('properties');
 
-  // Initialize with current property if no properties exist
-  useEffect(() => {
-    const admin = getAdminData();
-    if (admin.properties.length === 0) {
-      const homeData = getHomeData();
-      const defaultProp = {
-        id: generateId(),
-        name: homeData.property?.address ? homeData.property.address.split(',')[0] : 'My Home',
-        type: 'primary_residence',
-        status: 'active',
-        address: homeData.property?.address
-          ? `${homeData.property.address}, ${homeData.property.city || ''} ${homeData.property.state || ''}`
-          : '',
-        dataStoreKey: 'homebase_home_data',
-        createdAt: new Date().toISOString(),
-      };
-      admin.properties = [defaultProp];
-      admin.activePropertyId = defaultProp.id;
-      saveAdminData(admin);
-      setAdminData(admin);
+  const handleSaveProperty = async (propertyFormData) => {
+    try {
+      if (editingProperty) {
+        await updateProperty(editingProperty.id, {
+          name: propertyFormData.name,
+          address: propertyFormData.address,
+        });
+      } else {
+        await createProperty(user.id, {
+          name: propertyFormData.name,
+          address: propertyFormData.address,
+          is_active: allProperties.length === 0,
+        });
+      }
+      await refreshProperties();
+      setShowPropertyModal(false);
+      setEditingProperty(null);
+      toast.success(editingProperty ? 'Property updated' : 'Property added');
+    } catch (err) {
+      console.error('Failed to save property:', err);
+      toast.error('Failed to save property');
     }
-  }, []);
-
-  const handleSaveProperty = (property) => {
-    const updated = { ...adminData };
-    const exists = updated.properties.find(p => p.id === property.id);
-    if (exists) {
-      updated.properties = updated.properties.map(p => p.id === property.id ? { ...p, ...property } : p);
-    } else {
-      updated.properties.push(property);
-    }
-    if (!updated.activePropertyId) updated.activePropertyId = property.id;
-    saveAdminData(updated);
-    setAdminData(updated);
-    setShowPropertyModal(false);
-    setEditingProperty(null);
-    toast.success(exists ? 'Property updated' : 'Property added');
   };
 
-  const handleSwitchProperty = (id) => {
-    const updated = { ...adminData, activePropertyId: id };
-    saveAdminData(updated);
-    setAdminData(updated);
-    toast.success('Switched property');
+  const handleSwitchProperty = async (propertyId) => {
+    try {
+      // Deactivate all, activate selected
+      for (const prop of allProperties) {
+        if (prop.id === propertyId) {
+          await updateProperty(prop.id, { is_active: true });
+        } else if (prop.is_active) {
+          await updateProperty(prop.id, { is_active: false });
+        }
+      }
+      switchProperty(propertyId);
+      toast.success('Switched property');
+    } catch (err) {
+      console.error('Failed to switch property:', err);
+      toast.error('Failed to switch property');
+    }
   };
 
-  const handleDeleteProperty = (id) => {
-    if (adminData.properties.length <= 1) { toast.error("Can't delete your only property"); return; }
-    const updated = { ...adminData };
-    updated.properties = updated.properties.filter(p => p.id !== id);
-    if (updated.activePropertyId === id) updated.activePropertyId = updated.properties[0]?.id;
-    saveAdminData(updated);
-    setAdminData(updated);
-    toast.success('Property removed');
+  const handleDeleteProperty = async (propertyId) => {
+    if (allProperties.length <= 1) {
+      toast.error("Can't delete your only property");
+      return;
+    }
+    try {
+      await deleteProperty(propertyId);
+      await refreshProperties();
+      toast.success('Property deleted');
+    } catch (err) {
+      console.error('Failed to delete property:', err);
+      toast.error('Failed to delete property');
+    }
   };
 
   const handleExport = () => {
-    const homeData = getHomeData();
-    const blob = new Blob([JSON.stringify(homeData, null, 2)], { type: 'application/json' });
+    const exportData = { property: activeProperty, ...(homeData || {}) };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -219,11 +223,19 @@ export default function Admin() {
     toast.success('Data exported');
   };
 
-  const handleClearData = () => {
-    clearHomeData();
-    setShowClearConfirm(false);
-    toast.success('Property data cleared');
-    window.location.reload();
+  const handleClearData = async () => {
+    if (!activeProperty?.id || !user?.id) return;
+    try {
+      const addr = activeProperty.address;
+      await deleteProperty(activeProperty.id);
+      await createProperty(user.id, { name: activeProperty.name || 'My Home', address: addr, is_active: true });
+      await refreshProperties();
+      setShowClearConfirm(false);
+      toast.success('Property data cleared');
+    } catch (err) {
+      console.error('Failed to clear data:', err);
+      toast.error('Failed to clear data');
+    }
   };
 
   const tabs = [
@@ -273,11 +285,11 @@ export default function Admin() {
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {adminData.properties.map((property) => (
+              {allProperties.map((property) => (
                 <PropertyCard
                   key={property.id}
                   property={property}
-                  isActive={property.id === adminData.activePropertyId}
+                  isActive={property.id === activeProperty?.id}
                   onSwitch={() => handleSwitchProperty(property.id)}
                   onEdit={() => { setEditingProperty(property); setShowPropertyModal(true); }}
                   onDelete={() => handleDeleteProperty(property.id)}

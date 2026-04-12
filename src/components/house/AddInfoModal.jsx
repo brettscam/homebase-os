@@ -2,11 +2,17 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Camera, File, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  upsertRoom, upsertAppliance, upsertSystem,
+  upsertPaintRecord, upsertSmartHome, upsertEmergencyInfo,
+  upsertExterior, upsertDocument,
+} from '../../lib/supabaseDataStore';
 
-export default function AddInfoModal({ isOpen, onClose, section }) {
+export default function AddInfoModal({ isOpen, onClose, section, propertyId, onSave }) {
   const [files, setFiles] = useState([]);
   const [notes, setNotes] = useState('');
   const [dataSource, setDataSource] = useState('manual');
+  const [saving, setSaving] = useState(false);
 
   const handleFileChange = (e) => {
     const newFiles = Array.from(e.target.files);
@@ -14,11 +20,56 @@ export default function AddInfoModal({ isOpen, onClose, section }) {
     toast.success(`${newFiles.length} file(s) added`);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    toast.success('Information added successfully');
-    onClose();
-    // In real app, would upload files and save data
+    if (!propertyId) {
+      toast.error('No active property — select a property first');
+      return;
+    }
+    if (!notes.trim() && files.length === 0) {
+      toast.error('Add some notes or upload a file');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const notePayload = JSON.stringify({ text: notes, source: dataSource });
+
+      const sectionSaveMap = {
+        spaces:     () => upsertRoom({ property_id: propertyId, name: 'New Room', notes: notePayload }),
+        appliances: () => upsertAppliance({ property_id: propertyId, name: 'New Appliance', notes: notePayload }),
+        mechanical: () => upsertSystem({ property_id: propertyId, type: 'general', data: { notes: notes, source: dataSource } }),
+        vitals:     () => upsertSmartHome({ property_id: propertyId, type: 'general', data: { notes: notes, source: dataSource } }),
+        systems:    () => upsertSmartHome({ property_id: propertyId, type: 'general', data: { notes: notes, source: dataSource } }),
+        aesthetics: () => upsertPaintRecord({ property_id: propertyId, room_name: 'General', notes: notePayload }),
+        exterior:   () => upsertExterior({ property_id: propertyId, type: 'general', data: { notes: notes, source: dataSource } }),
+        documents:  () => upsertDocument({ property_id: propertyId, name: files[0]?.name || 'Note', type: dataSource, notes: notePayload }),
+        emergency:  () => upsertEmergencyInfo({ property_id: propertyId, type: 'general', data: { notes: notes, source: dataSource } }),
+      };
+
+      const saveFn = sectionSaveMap[section];
+      if (saveFn) {
+        await saveFn();
+        toast.success('Information added successfully');
+        if (onSave) await onSave();
+      } else if (section === 'landscape') {
+        toast.info('Landscape data support coming soon');
+      } else if (section === 'model3d') {
+        toast.info('3D model data is auto-generated from rooms');
+      } else {
+        toast.success('Information noted');
+      }
+
+      setNotes('');
+      setFiles([]);
+      setDataSource('manual');
+      onClose();
+    } catch (err) {
+      console.error('Failed to save:', err);
+      toast.error('Failed to save — please try again');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const removeFile = (index) => {
@@ -156,10 +207,11 @@ export default function AddInfoModal({ isOpen, onClose, section }) {
               </button>
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-medium flex items-center justify-center gap-2"
+                disabled={saving}
+                className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Plus className="w-5 h-5" />
-                Add Information
+                {saving ? 'Saving...' : 'Add Information'}
               </button>
             </div>
           </form>
