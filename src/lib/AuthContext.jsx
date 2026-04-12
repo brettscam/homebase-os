@@ -28,14 +28,17 @@ export const AuthProvider = ({ children }) => {
     }, 8000);
 
     // Check current session
-    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('Session check failed:', error);
         setAuthError({ type: 'unknown', message: error.message });
       } else if (session?.user) {
         setUser(prev => prev?.id === session.user.id ? prev : session.user);
         setIsAuthenticated(true);
-        await loadProfile(session.user.id);
+        // Fire and forget — NEVER await DB queries inside auth callbacks.
+        // Awaiting here holds supabase-js's internal auth lock, which blocks
+        // ALL subsequent database queries from getting an auth token.
+        loadProfile(session.user.id);
       }
       resolveAuth();
     }).catch((err) => {
@@ -46,11 +49,12 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for auth state changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (session?.user) {
           setUser(prev => prev?.id === session.user.id ? prev : session.user);
           setIsAuthenticated(true);
-          await loadProfile(session.user.id);
+          // Fire and forget — same reason as above
+          loadProfile(session.user.id);
         } else {
           setUser(null);
           setProfile(null);
