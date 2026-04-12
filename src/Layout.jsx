@@ -122,7 +122,7 @@ export default function Layout({ children, currentPageName }) {
   }
 
   const navItems = [
-    { id: 'HomeBase', icon: Home, label: 'Home' },
+    { id: 'HomeBase', icon: Home, label: 'Dashboard' },
     { id: 'HomeBaseManual', icon: Book, label: 'Manual' },
     { id: 'Projects', icon: Wrench, label: 'Projects' },
     { id: 'Insights', icon: TrendingUp, label: 'Insights' },
@@ -132,6 +132,7 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-hb-warm">
+      {/* Top header — property selector + actions */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-100">
         <div className="flex items-center justify-between px-4 h-14">
           {/* Left: Logo + Property */}
@@ -145,24 +146,6 @@ export default function Layout({ children, currentPageName }) {
               onSwitch={switchProperty}
             />
           </div>
-
-          {/* Center: Nav */}
-          <nav className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1 overflow-x-auto">
-            {navItems.map((item) => (
-              <Link
-                key={item.id}
-                to={createPageUrl(item.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                  pathName === item.id
-                    ? 'bg-white text-hb-teal shadow-sm'
-                    : 'text-hb-slate hover:text-hb-navy'
-                }`}
-              >
-                <item.icon className="w-4 h-4" strokeWidth={1.5} />
-                <span className="hidden md:inline">{item.label}</span>
-              </Link>
-            ))}
-          </nav>
 
           {/* Right: Actions */}
           <div className="flex items-center gap-1.5">
@@ -201,7 +184,29 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </header>
 
-      <main className="pt-14">
+      {/* Section nav — below header, shows on all pages except AskAI/Admin */}
+      {pathName !== 'AskAI' && pathName !== 'Admin' && pathName !== 'Onboarding' && (
+        <div className="fixed top-14 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-b border-gray-100">
+          <nav className="flex items-center gap-1 px-4 py-2 overflow-x-auto scrollbar-hide">
+            {navItems.map((item) => (
+              <Link
+                key={item.id}
+                to={createPageUrl(item.id)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                  pathName === item.id
+                    ? 'bg-hb-teal-50 text-hb-teal'
+                    : 'text-hb-slate hover:text-hb-navy hover:bg-gray-50'
+                }`}
+              >
+                <item.icon className="w-4 h-4" strokeWidth={1.5} />
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
+
+      <main className={`pt-14 ${pathName !== 'AskAI' && pathName !== 'Admin' && pathName !== 'Onboarding' ? 'pt-[6.5rem]' : 'pt-14'}`}>
         {children}
       </main>
 
