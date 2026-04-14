@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { getHomeData, calculateCompletion } from '../lib/homeDataStore';
 import { useProperty } from '@/lib/PropertyContext';
 import { systemsArrayToLegacy } from '@/lib/supabaseDataStore';
 import { HomeBaseLoader } from '@/components/HomeBaseLogo';
@@ -34,7 +33,7 @@ import {
 function useHomeData() {
   const { activeProperty, homeData: supaData, isLoading } = useProperty();
 
-  if (isLoading) return { homeData: getHomeData(), loading: true };
+  if (isLoading) return { homeData: null, loading: true };
 
   if (activeProperty && supaData) {
     return {
@@ -90,7 +89,7 @@ function useHomeData() {
     };
   }
 
-  return { homeData: getHomeData(), loading: false };
+  return { homeData: null, loading: false };
 }
 
 // Progress item for the setup checklist
@@ -149,15 +148,15 @@ const NavCard = ({ icon: Icon, title, description, to, delay }) => (
 const DashboardView = () => {
   const { homeData, loading } = useHomeData();
 
-  if (loading) return <HomeBaseLoader message="Loading your home..." />;
+  if (loading || !homeData) return <HomeBaseLoader message="Loading your home..." />;
 
-  const completion = calculateCompletion(homeData);
-  const pct = completion.overall.percentage;
   const hasProperty = homeData.property?.address;
   const hasRooms = homeData.rooms?.length > 0;
   const hasAppliances = homeData.appliances?.length > 0;
   const hasSystems = homeData.systems?.hvac?.brand || homeData.systems?.waterHeater?.brand;
   const hasContacts = homeData.contacts?.length > 0;
+  const checks = [hasProperty, hasRooms, hasAppliances, hasSystems, hasContacts];
+  const pct = Math.round((checks.filter(Boolean).length / checks.length) * 100);
 
   return (
     <div className="min-h-screen bg-hb-warm">

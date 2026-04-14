@@ -376,29 +376,21 @@ const DocumentUploadStep = ({ data, onChange }) => {
   });
 
   const handleFileChange = async (e, docType) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+
+    const files = Array.from(fileList);
+    const label = DOCUMENT_TYPES.find(d => d.value === docType)?.label || 'Document';
 
     for (const file of files) {
       const id = generateId();
-      const label = DOCUMENT_TYPES.find(d => d.value === docType)?.label || 'Document';
-
-      // Try to read text content from the file
-      const textContent = await readFileAsText(file);
-      const isReadable = textContent && textContent.trim().length > 50 && !textContent.includes('\u0000');
-
-      if (isReadable) {
-        // Text was extracted — add as pasted text for processing
-        setPastedTexts(prev => [...prev, { id, type: docType, text: textContent.trim(), label: `${label} (${file.name})` }]);
-        toast.success(`"${file.name}" loaded — text extracted`);
-      } else {
-        // Binary file (scanned PDF, image) — save reference
-        setDocuments(prev => [...prev, { file, name: file.name, type: docType, id }]);
-        toast.info(`"${file.name}" added — use Homer (Ask AI) after setup to extract data from scanned documents`);
-      }
+      // Always add the file immediately so the user sees feedback
+      setDocuments(prev => [...prev, { file, name: file.name, type: docType, id }]);
+      toast.success(`"${file.name}" added`);
     }
+
     // Reset file input so re-selecting the same file works
-    e.target.value = '';
+    try { e.target.value = ''; } catch (_) { /* some browsers block this */ }
   };
 
   const addPastedText = () => {
