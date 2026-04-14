@@ -14,8 +14,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  getHomeData, saveHomeData, generateId, calculateCompletion
-} from '../lib/homeDataStore';
+  processDocumentFile, processDocumentText,
+  extractBasicPatterns, mergeExtractedData,
+} from '../lib/documentProcessor';
 import { useAuth } from '@/lib/AuthContext';
 import { useProperty } from '@/lib/PropertyContext';
 import {
@@ -24,6 +25,86 @@ import {
   upsertPaintRecord, upsertSmartHome, upsertEmergencyInfo,
   upsertExterior, upsertUtility,
 } from '../lib/supabaseDataStore';
+
+// ─── Default Data Shape ──────────────────────────────────────────────
+const defaultData = {
+  property: {
+    address: '', city: '', state: '', zip: '',
+    yearBuilt: '', sqft: '', lotSize: '', stories: '',
+    bedrooms: '', bathrooms: '',
+  },
+  rooms: [],
+  appliances: [],
+  paint: [],
+  systems: {
+    hvac: { brand: '', model: '', type: '', installDate: '', filterSize: '', thermostat: '' },
+    waterHeater: { brand: '', model: '', capacity: '', type: '', installDate: '' },
+    electrical: { amperage: '', circuits: '', panelLocation: '' },
+    plumbing: { mainShutoffLocation: '', mainShutoffInstructions: '' },
+  },
+  emergency: {
+    waterShutoff: { location: '', instructions: '' },
+    gasShutoff: { location: '', instructions: '' },
+    electricalPanel: { location: '', instructions: '' },
+  },
+  exterior: {
+    roof: { type: '', material: '', installDate: '' },
+    gutters: { type: '', material: '' },
+    siding: { material: '' },
+  },
+  documents: [],
+  onboardingComplete: false,
+};
+
+function calculateCompletion(data) {
+  const sections = {
+    property: () => {
+      const fields = ['address', 'city', 'state', 'yearBuilt', 'sqft', 'bedrooms', 'bathrooms'];
+      const filled = fields.filter(f => data.property?.[f]).length;
+      return { completed: filled, total: fields.length };
+    },
+    rooms: () => {
+      const total = Math.max(parseInt(data.property?.bedrooms || 0) + 3, 4);
+      return { completed: (data.rooms || []).length, total };
+    },
+    appliances: () => {
+      const count = (data.appliances || []).length;
+      return { completed: count, total: Math.max(count, 3) };
+    },
+    systems: () => {
+      const fields = [
+        data.systems?.hvac?.brand,
+        data.systems?.waterHeater?.brand,
+        data.systems?.electrical?.amperage,
+        data.systems?.electrical?.panelLocation,
+      ];
+      return { completed: fields.filter(Boolean).length, total: 4 };
+    },
+    emergency: () => {
+      const shutoffs = [
+        data.emergency?.waterShutoff?.location,
+        data.emergency?.gasShutoff?.location,
+        data.emergency?.electricalPanel?.location,
+      ].filter(Boolean).length;
+      return { completed: shutoffs, total: 3 };
+    },
+  };
+
+  const result = {};
+  let totalCompleted = 0, totalItems = 0;
+  for (const [key, calc] of Object.entries(sections)) {
+    const r = calc();
+    r.percentage = r.total > 0 ? Math.round((r.completed / r.total) * 100) : 0;
+    result[key] = r;
+    totalCompleted += r.completed;
+    totalItems += r.total;
+  }
+  result.overall = {
+    completed: totalCompleted, total: totalItems,
+    percentage: totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) : 0,
+  };
+  return result;
+}
 
 // ─── Step Progress Bar ───────────────────────────────────────────────
 const StepProgress = ({ currentStep, totalSteps, steps }) => (
@@ -365,41 +446,32 @@ const DocumentUploadStep = ({ data, onChange }) => {
   const [pastedTexts, setPastedTexts] = useState([]);
   const [activePasteType, setActivePasteType] = useState(null);
   const [pasteText, setPasteText] = useState('');
-  const [processingAll, setProcessingAll] = useState(false);
-  const [processed, setProcessed] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [processedResults, setProcessedResults] = useState([]);
+  const [processError, setProcessError] = useState(null);
 
-  const readFileAsText = (file) => new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => resolve(null);
-    reader.readAsText(file);
-  });
-
-  const handleFileChange = async (e, docType) => {
+  const handleFileChange = (e, docType) => {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
 
-    const files = Array.from(fileList);
-    const label = DOCUMENT_TYPES.find(d => d.value === docType)?.label || 'Document';
-
-    for (const file of files) {
-      const id = generateId();
-      // Always add the file immediately so the user sees feedback
-      setDocuments(prev => [...prev, { file, name: file.name, type: docType, id }]);
+    for (const file of Array.from(fileList)) {
+      setDocuments(prev => [...prev, {
+        file, name: file.name, type: docType, id: crypto.randomUUID(),
+        status: 'ready', // ready | processing | done | error
+      }]);
       toast.success(`"${file.name}" added`);
     }
-
-    // Reset file input so re-selecting the same file works
-    try { e.target.value = ''; } catch (_) { /* some browsers block this */ }
+    try { e.target.value = ''; } catch (_) {}
   };
 
   const addPastedText = () => {
     if (!pasteText.trim() || !activePasteType) return;
     setPastedTexts(prev => [...prev, {
-      id: generateId(),
+      id: crypto.randomUUID(),
       type: activePasteType,
       text: pasteText.trim(),
       label: DOCUMENT_TYPES.find(d => d.value === activePasteType)?.label || 'Document',
+      status: 'ready',
     }]);
     setPasteText('');
     setActivePasteType(null);
@@ -410,52 +482,100 @@ const DocumentUploadStep = ({ data, onChange }) => {
   const removePastedText = (id) => setPastedTexts(prev => prev.filter(t => t.id !== id));
 
   const processAllDocuments = async () => {
-    if (pastedTexts.length === 0 && documents.length === 0) {
+    if (documents.length === 0 && pastedTexts.length === 0) {
       toast.error('Add at least one document first');
       return;
     }
 
-    setProcessingAll(true);
-    try {
-      // Save document references to the home data
-      const merged = { ...data };
-      const docs = [
-        ...documents.map(d => ({
-          id: d.id, name: d.name, type: d.type,
-          uploadDate: new Date().toISOString(),
-        })),
-        ...pastedTexts.map(t => ({
-          id: t.id, name: t.label, type: t.type,
-          uploadDate: new Date().toISOString(),
-        })),
-      ];
-      merged.documents = [...(merged.documents || []), ...docs];
+    setProcessing(true);
+    setProcessError(null);
+    const results = [];
+    let merged = structuredClone(data);
 
-      // Store pasted text content for future Homer processing
-      if (pastedTexts.length > 0) {
-        merged._documentTexts = [...(merged._documentTexts || []), ...pastedTexts.map(t => ({
-          id: t.id, type: t.type, text: t.text,
-        }))];
+    // Process uploaded files
+    for (const doc of documents) {
+      setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, status: 'processing' } : d));
+      try {
+        const extracted = await processDocumentFile(doc.file, doc.type, merged.property);
+        results.push({ id: doc.id, name: doc.name, type: doc.type, extracted, status: 'done' });
+        merged = mergeExtractedData(merged, extracted);
+        setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, status: 'done' } : d));
+      } catch (err) {
+        console.warn(`AI processing failed for ${doc.name}, trying basic extraction:`, err);
+        // Fallback: try to read as text and use regex patterns
+        try {
+          const text = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => resolve('');
+            reader.readAsText(doc.file);
+          });
+          if (text && text.length > 50) {
+            const basicResult = extractBasicPatterns(text);
+            results.push({ id: doc.id, name: doc.name, type: doc.type, extracted: basicResult, status: 'partial', note: 'Basic extraction — deploy AI for full results' });
+            merged = mergeExtractedData(merged, basicResult);
+            setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, status: 'done' } : d));
+          } else {
+            results.push({ id: doc.id, name: doc.name, type: doc.type, status: 'error', error: err.message });
+            setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, status: 'error' } : d));
+          }
+        } catch {
+          results.push({ id: doc.id, name: doc.name, type: doc.type, status: 'error', error: err.message });
+          setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, status: 'error' } : d));
+        }
       }
+    }
 
-      onChange(merged);
-      setProcessed(true);
-      toast.success(`${docs.length} document(s) saved! Continue to review your home profile.`);
-    } catch {
-      toast.error('Failed to save documents. Please try again.');
-    } finally {
-      setProcessingAll(false);
+    // Process pasted texts
+    for (const pt of pastedTexts) {
+      setPastedTexts(prev => prev.map(t => t.id === pt.id ? { ...t, status: 'processing' } : t));
+      try {
+        const extracted = await processDocumentText(pt.text, pt.type, merged.property);
+        results.push({ id: pt.id, name: pt.label, type: pt.type, extracted, status: 'done' });
+        merged = mergeExtractedData(merged, extracted);
+        setPastedTexts(prev => prev.map(t => t.id === pt.id ? { ...t, status: 'done' } : t));
+      } catch (err) {
+        // Fallback to basic regex
+        const basicResult = extractBasicPatterns(pt.text);
+        if (basicResult.summary && !basicResult.summary.includes('No property data')) {
+          results.push({ id: pt.id, name: pt.label, type: pt.type, extracted: basicResult, status: 'partial', note: 'Basic extraction — deploy AI for full results' });
+          merged = mergeExtractedData(merged, basicResult);
+          setPastedTexts(prev => prev.map(t => t.id === pt.id ? { ...t, status: 'done' } : t));
+        } else {
+          results.push({ id: pt.id, name: pt.label, type: pt.type, status: 'error', error: err.message });
+          setPastedTexts(prev => prev.map(t => t.id === pt.id ? { ...t, status: 'error' } : t));
+        }
+      }
+    }
+
+    // Save document references
+    const docRefs = [
+      ...documents.map(d => ({ id: d.id, name: d.name, type: d.type, uploadDate: new Date().toISOString() })),
+      ...pastedTexts.map(t => ({ id: t.id, name: t.label, type: t.type, uploadDate: new Date().toISOString() })),
+    ];
+    merged.documents = [...(merged.documents || []), ...docRefs];
+
+    onChange(merged);
+    setProcessedResults(results);
+    setProcessing(false);
+
+    const successCount = results.filter(r => r.status === 'done' || r.status === 'partial').length;
+    if (successCount > 0) {
+      toast.success(`Extracted data from ${successCount} document(s)!`);
+    } else if (results.some(r => r.status === 'error')) {
+      setProcessError('Document processing requires the AI backend. You can still fill in details manually in the next step.');
     }
   };
 
   const totalDocs = documents.length + pastedTexts.length;
+  const hasResults = processedResults.length > 0;
 
   return (
     <StepLayout
       title="Upload Your Documents"
-      subtitle="Upload your closing docs, appraisals, inspections, or disclosures — Homer (Ask AI) can extract the details after setup"
+      subtitle="Upload appraisals, inspections, or disclosures. AI will extract property details automatically."
       icon={FileText}
-      tip="The more documents you provide, the more complete your home profile will be. Appraisals are especially good — they have dimensions, sqft, room counts, and more."
+      tip="Appraisals are especially valuable — they contain dimensions, sq ft, room counts, and more. PDFs work best."
     >
       <div className="space-y-5">
         {/* Document Type Cards */}
@@ -477,24 +597,26 @@ const DocumentUploadStep = ({ data, onChange }) => {
                     type="file"
                     id={`upload-${value}`}
                     multiple
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
                     onChange={(e) => handleFileChange(e, value)}
                     className="hidden"
+                    disabled={processing}
                   />
                   <label
                     htmlFor={`upload-${value}`}
-                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-700 cursor-pointer transition-colors"
+                    className={`px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-700 cursor-pointer transition-colors ${processing ? 'opacity-50 pointer-events-none' : ''}`}
                   >
                     <Upload className="w-3.5 h-3.5 inline mr-1" />
                     File
                   </label>
                   <button
                     onClick={() => setActivePasteType(activePasteType === value ? null : value)}
+                    disabled={processing}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       activePasteType === value
                         ? 'bg-purple-100 text-purple-700'
                         : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                    }`}
+                    } disabled:opacity-50`}
                   >
                     <FileText className="w-3.5 h-3.5 inline mr-1" />
                     Paste
@@ -502,7 +624,6 @@ const DocumentUploadStep = ({ data, onChange }) => {
                 </div>
               </div>
 
-              {/* Paste text area */}
               <AnimatePresence>
                 {activePasteType === value && (
                   <motion.div
@@ -534,35 +655,55 @@ const DocumentUploadStep = ({ data, onChange }) => {
           ))}
         </div>
 
-        {/* Added documents list */}
+        {/* Added documents list with status */}
         {(documents.length > 0 || pastedTexts.length > 0) && (
           <div className="bg-gray-50 rounded-2xl p-4">
             <p className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-3">
-              Documents Ready ({totalDocs})
+              Documents ({totalDocs})
             </p>
             <div className="space-y-2">
               {documents.map(doc => (
                 <div key={doc.id} className="flex items-center justify-between p-3 bg-white rounded-xl text-sm">
-                  <div className="flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-hb-teal" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    {doc.status === 'processing' ? (
+                      <Loader2 className="w-4 h-4 text-hb-teal animate-spin flex-shrink-0" />
+                    ) : doc.status === 'done' ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    ) : doc.status === 'error' ? (
+                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    ) : (
+                      <Upload className="w-4 h-4 text-hb-teal flex-shrink-0" />
+                    )}
                     <span className="text-gray-700 truncate">{doc.name}</span>
-                    <span className="text-xs text-gray-400">({DOCUMENT_TYPES.find(d => d.value === doc.type)?.label})</span>
+                    <span className="text-xs text-gray-400 flex-shrink-0">({DOCUMENT_TYPES.find(d => d.value === doc.type)?.label})</span>
                   </div>
-                  <button onClick={() => removeDocument(doc.id)} className="text-gray-400 hover:text-red-500">
-                    <X className="w-4 h-4" />
-                  </button>
+                  {!processing && (
+                    <button onClick={() => removeDocument(doc.id)} className="text-gray-400 hover:text-red-500 flex-shrink-0 ml-2">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               ))}
               {pastedTexts.map(doc => (
                 <div key={doc.id} className="flex items-center justify-between p-3 bg-white rounded-xl text-sm">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-purple-500" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    {doc.status === 'processing' ? (
+                      <Loader2 className="w-4 h-4 text-purple-500 animate-spin flex-shrink-0" />
+                    ) : doc.status === 'done' ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    ) : doc.status === 'error' ? (
+                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                    )}
                     <span className="text-gray-700">{doc.label}</span>
-                    <span className="text-xs text-gray-400">({doc.text.length} chars)</span>
+                    <span className="text-xs text-gray-400 flex-shrink-0">({doc.text.length} chars)</span>
                   </div>
-                  <button onClick={() => removePastedText(doc.id)} className="text-gray-400 hover:text-red-500">
-                    <X className="w-4 h-4" />
-                  </button>
+                  {!processing && (
+                    <button onClick={() => removePastedText(doc.id)} className="text-gray-400 hover:text-red-500 flex-shrink-0 ml-2">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -570,34 +711,181 @@ const DocumentUploadStep = ({ data, onChange }) => {
         )}
 
         {/* Process Button */}
-        {totalDocs > 0 && !processed && (
+        {totalDocs > 0 && !hasResults && (
           <button
             onClick={processAllDocuments}
-            disabled={processingAll}
+            disabled={processing}
             className="w-full flex items-center justify-center gap-3 py-4 bg-hb-teal hover:bg-hb-teal-700 text-white rounded-2xl transition-all disabled:opacity-60 font-semibold text-lg shadow-lg"
           >
-            {processingAll ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Saving {totalDocs} document{totalDocs > 1 ? 's' : ''}...</>
+            {processing ? (
+              <><Loader2 className="w-5 h-5 animate-spin" /> Reading documents...</>
             ) : (
-              <><Sparkles className="w-5 h-5" /> Save {totalDocs} Document{totalDocs > 1 ? 's' : ''} &amp; Continue</>
+              <><Sparkles className="w-5 h-5" /> Extract Property Data ({totalDocs} doc{totalDocs > 1 ? 's' : ''})</>
             )}
           </button>
         )}
 
-        {processed && (
+        {/* Processing Error */}
+        {processError && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-900">AI processing not available</p>
+                <p className="text-xs text-amber-700 mt-1">{processError}</p>
+                <p className="text-xs text-amber-600 mt-2 font-medium">To enable AI extraction:</p>
+                <ol className="text-xs text-amber-700 mt-1 list-decimal list-inside space-y-0.5">
+                  <li>Set your Anthropic API key: <code className="bg-amber-100 px-1 rounded">supabase secrets set ANTHROPIC_API_KEY=sk-ant-...</code></li>
+                  <li>Deploy the edge function: <code className="bg-amber-100 px-1 rounded">supabase functions deploy process-document</code></li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Extraction Results */}
+        {hasResults && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center"
+            className="space-y-4"
           >
-            <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-2" />
-            <h3 className="font-semibold text-green-900">Documents Saved!</h3>
-            <p className="text-sm text-green-700 mt-1">Your documents are ready. After setup, use Homer (Ask AI) to extract property details automatically.</p>
-            <p className="text-xs text-green-600 mt-2">Continue to review your home profile.</p>
+            {/* Summary */}
+            {processedResults.filter(r => r.extracted?.summary).map(r => (
+              <div key={r.id} className={`rounded-2xl p-4 border ${
+                r.status === 'partial' ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'
+              }`}>
+                <div className="flex items-start gap-3">
+                  {r.status === 'partial' ? (
+                    <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{r.name}</p>
+                    <p className="text-xs text-gray-600 mt-1">{r.extracted.summary}</p>
+                    {r.note && <p className="text-xs text-amber-600 mt-1 font-medium">{r.note}</p>}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* What was found */}
+            {(() => {
+              const propFields = Object.entries(data.property || {}).filter(([_, v]) => v);
+              const roomCount = (data.rooms || []).length;
+              const appCount = (data.appliances || []).length;
+              const hasAnything = propFields.length > 0 || roomCount > 0 || appCount > 0;
+
+              if (!hasAnything) return null;
+
+              return (
+                <div className="bg-white border border-gray-200 rounded-2xl p-5">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3">What we found</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {data.property?.sqft && (
+                      <div className="bg-hb-teal-50 rounded-xl p-3">
+                        <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Sq Ft</p>
+                        <p className="text-lg font-semibold text-gray-900">{data.property.sqft}</p>
+                      </div>
+                    )}
+                    {data.property?.bedrooms && (
+                      <div className="bg-hb-teal-50 rounded-xl p-3">
+                        <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Bedrooms</p>
+                        <p className="text-lg font-semibold text-gray-900">{data.property.bedrooms}</p>
+                      </div>
+                    )}
+                    {data.property?.bathrooms && (
+                      <div className="bg-hb-teal-50 rounded-xl p-3">
+                        <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Bathrooms</p>
+                        <p className="text-lg font-semibold text-gray-900">{data.property.bathrooms}</p>
+                      </div>
+                    )}
+                    {data.property?.yearBuilt && (
+                      <div className="bg-hb-teal-50 rounded-xl p-3">
+                        <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Year Built</p>
+                        <p className="text-lg font-semibold text-gray-900">{data.property.yearBuilt}</p>
+                      </div>
+                    )}
+                    {data.property?.stories && (
+                      <div className="bg-hb-teal-50 rounded-xl p-3">
+                        <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Stories</p>
+                        <p className="text-lg font-semibold text-gray-900">{data.property.stories}</p>
+                      </div>
+                    )}
+                    {data.property?.lotSize && (
+                      <div className="bg-hb-teal-50 rounded-xl p-3">
+                        <p className="text-[10px] font-medium text-hb-teal uppercase tracking-wider">Lot Size</p>
+                        <p className="text-lg font-semibold text-gray-900">{data.property.lotSize}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {roomCount > 0 && (
+                    <div className="mt-4">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                        Rooms Found ({roomCount})
+                      </p>
+                      <div className="space-y-1">
+                        {data.rooms.slice(0, 8).map((room, i) => (
+                          <div key={room.id || i} className="flex items-center justify-between py-1.5 px-3 bg-gray-50 rounded-lg text-sm">
+                            <span className="text-gray-800 font-medium">{room.name}</span>
+                            {room.dimensions && (
+                              <span className="text-xs text-gray-500">{room.dimensions}</span>
+                            )}
+                          </div>
+                        ))}
+                        {roomCount > 8 && (
+                          <p className="text-xs text-gray-400 text-center mt-1">+{roomCount - 8} more rooms</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {appCount > 0 && (
+                    <div className="mt-4">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                        Appliances Found ({appCount})
+                      </p>
+                      <div className="space-y-1">
+                        {data.appliances.map((app, i) => (
+                          <div key={app.id || i} className="flex items-center justify-between py-1.5 px-3 bg-gray-50 rounded-lg text-sm">
+                            <span className="text-gray-800 font-medium">{app.name}</span>
+                            {app.brand && <span className="text-xs text-gray-500">{app.brand}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Unknowns from AI */}
+            {processedResults.some(r => r.extracted?.unknowns?.length > 0) && (
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-4 h-4 text-amber-500" />
+                  <p className="text-xs font-semibold text-amber-900 uppercase tracking-wider">Needs Your Input</p>
+                </div>
+                <ul className="space-y-1">
+                  {processedResults.flatMap(r => (r.extracted?.unknowns || []).map((u, i) => (
+                    <li key={`${r.id}-${i}`} className="text-xs text-amber-800 flex items-start gap-2">
+                      <span className="text-amber-400 mt-0.5">-</span>
+                      <span>{u}</span>
+                    </li>
+                  )))}
+                </ul>
+              </div>
+            )}
+
+            <p className="text-center text-sm text-gray-500 mt-2">
+              Review and edit everything in the next step
+            </p>
           </motion.div>
         )}
 
-        {totalDocs === 0 && (
+        {totalDocs === 0 && !hasResults && (
           <div className="text-center py-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
             <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 text-sm">No documents added yet</p>
@@ -1052,18 +1340,11 @@ const STEPS = [
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [homeData, setHomeData] = useState(() => getHomeData());
+  const [homeData, setHomeData] = useState(() => structuredClone(defaultData));
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { refreshProperties } = useProperty();
-
-  // Auto-save to localStorage as a draft (fast, no network)
-  useEffect(() => {
-    if (currentStep > 0) {
-      saveHomeData(homeData);
-    }
-  }, [homeData, currentStep]);
 
   const goNext = () => {
     if (currentStep < STEPS.length - 1) {
@@ -1082,11 +1363,7 @@ export default function Onboarding() {
   const finishOnboarding = async () => {
     setSaving(true);
     try {
-      // 1. Save to localStorage as fallback
-      const updated = { ...homeData, onboardingComplete: true };
-      saveHomeData(updated);
-
-      // 2. Persist to Supabase if authenticated
+      // Persist to Supabase
       if (user) {
         const p = homeData.property || {};
         const property = await createProperty(user.id, {
@@ -1187,9 +1464,9 @@ export default function Onboarding() {
       toast.success('Home profile saved! Welcome to HomeBase.');
     } catch (err) {
       console.error('Failed to save to Supabase:', err);
-      // Still navigate — localStorage backup exists
-      navigate(createPageUrl('HomeBase'));
-      toast.success('Home profile saved locally. Cloud sync will retry.');
+      toast.error('Failed to save profile. Please try again.');
+      setSaving(false);
+      return;
     } finally {
       setSaving(false);
     }
