@@ -256,7 +256,7 @@ const AddressLookupStep = ({ data, onChange }) => {
   return (
     <StepLayout
       title="Your Address"
-      subtitle="Enter your address and we'll pull what we can from public records"
+      subtitle="Enter your home address to get started"
       icon={MapPin}
     >
       <div className="space-y-5">
@@ -267,23 +267,14 @@ const AddressLookupStep = ({ data, onChange }) => {
           <Field label="ZIP" value={p.zip} onChange={v => update('zip', v)} placeholder="94941" />
         </div>
 
-        {/* Lookup Button */}
+        {/* Helper text — property lookup replaced by Homer document processing */}
         {!lookupDone && (
-          <button
-            onClick={doPropertyLookup}
-            disabled={lookupLoading || !canLookup}
-            className="w-full flex items-center justify-center gap-3 py-4 bg-hb-teal hover:bg-hb-teal-700 text-white rounded-2xl transition-all disabled:opacity-50 font-medium shadow-lg"
-          >
-            {lookupLoading ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Searching public records...</>
-            ) : (
-              <><Search className="w-5 h-5" /> Look Up Property</>
-            )}
-          </button>
-        )}
-
-        {!canLookup && !lookupDone && (
-          <p className="text-xs text-gray-400 text-center">Enter address, city, and state to enable lookup</p>
+          <div className="flex items-start gap-3 bg-hb-teal-50 border border-hb-teal-100 rounded-xl p-4">
+            <Sparkles className="w-5 h-5 text-hb-teal flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-hb-teal-700">
+              Upload an appraisal or inspection report to Homer (Ask AI) after setup to auto-fill property details.
+            </p>
+          </div>
         )}
 
         {/* Lookup Results */}
@@ -377,15 +368,37 @@ const DocumentUploadStep = ({ data, onChange }) => {
   const [processingAll, setProcessingAll] = useState(false);
   const [processed, setProcessed] = useState(false);
 
-  const handleFileChange = (e, docType) => {
-    const newFiles = Array.from(e.target.files).map(f => ({
-      file: f,
-      name: f.name,
-      type: docType,
-      id: generateId(),
-    }));
-    setDocuments(prev => [...prev, ...newFiles]);
-    toast.success(`${newFiles.length} file(s) added`);
+  const readFileAsText = (file) => new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => resolve(null);
+    reader.readAsText(file);
+  });
+
+  const handleFileChange = async (e, docType) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    for (const file of files) {
+      const id = generateId();
+      const label = DOCUMENT_TYPES.find(d => d.value === docType)?.label || 'Document';
+
+      // Try to read text content from the file
+      const textContent = await readFileAsText(file);
+      const isReadable = textContent && textContent.trim().length > 50 && !textContent.includes('\u0000');
+
+      if (isReadable) {
+        // Text was extracted — add as pasted text for processing
+        setPastedTexts(prev => [...prev, { id, type: docType, text: textContent.trim(), label: `${label} (${file.name})` }]);
+        toast.success(`"${file.name}" loaded — text extracted`);
+      } else {
+        // Binary file (scanned PDF, image) — save reference
+        setDocuments(prev => [...prev, { file, name: file.name, type: docType, id }]);
+        toast.info(`"${file.name}" added — use Homer (Ask AI) after setup to extract data from scanned documents`);
+      }
+    }
+    // Reset file input so re-selecting the same file works
+    e.target.value = '';
   };
 
   const addPastedText = () => {
@@ -405,140 +418,39 @@ const DocumentUploadStep = ({ data, onChange }) => {
   const removePastedText = (id) => setPastedTexts(prev => prev.filter(t => t.id !== id));
 
   const processAllDocuments = async () => {
-    const allTexts = pastedTexts.map(t => t.text);
-    if (allTexts.length === 0) {
-      toast.error('Add at least one document (paste text from a PDF, appraisal, or disclosure)');
+    if (pastedTexts.length === 0 && documents.length === 0) {
+      toast.error('Add at least one document first');
       return;
     }
 
     setProcessingAll(true);
     try {
-      const combinedText = allTexts.map((text, i) => {
-        const doc = pastedTexts[i];
-        return `--- ${doc.label} ---\n${text}`;
-      }).join('\n\n');
+      // Save document references to the home data
+      const merged = { ...data };
+      const docs = [
+        ...documents.map(d => ({
+          id: d.id, name: d.name, type: d.type,
+          uploadDate: new Date().toISOString(),
+        })),
+        ...pastedTexts.map(t => ({
+          id: t.id, name: t.label, type: t.type,
+          uploadDate: new Date().toISOString(),
+        })),
+      ];
+      merged.documents = [...(merged.documents || []), ...docs];
 
-      // AI document extraction is temporarily disabled while migrating backends.
-      toast.info('AI document extraction coming soon — data has been saved as-is for now.');
-      setProcessingAll(false);
-      return;
-      const response = '';
-
-      try {
-        const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        const parsed = JSON.parse(cleaned);
-
-        // Merge extracted data into home data
-        const merged = { ...data };
-        merged._sources = { ...(merged._sources || {}), documents: [] };
-
-        // Merge property fields — document data overrides lookup data
-        if (parsed.property) {
-          for (const [key, value] of Object.entries(parsed.property)) {
-            if (value) {
-              // Documents are authoritative — override lookup/empty values
-              const hadLookupValue = (data._sources?.lookup || []).includes(key);
-              if (!merged.property[key] || hadLookupValue) {
-                merged.property[key] = value;
-              }
-              merged._sources.documents.push(`property.${key}`);
-            }
-          }
-        }
-
-        // Add rooms
-        if (parsed.rooms?.length) {
-          const newRooms = parsed.rooms
-            .filter(r => r.name)
-            .map(r => ({ ...r, id: generateId(), _source: 'document' }));
-          merged.rooms = [...(merged.rooms || []), ...newRooms];
-        }
-
-        // Add appliances
-        if (parsed.appliances?.length) {
-          const newAppliances = parsed.appliances
-            .filter(a => a.type || a.brand)
-            .map(a => ({ ...a, id: generateId(), _source: 'document' }));
-          merged.appliances = [...(merged.appliances || []), ...newAppliances];
-        }
-
-        // Add paint
-        if (parsed.paint?.length) {
-          const newPaint = parsed.paint
-            .filter(p => p.room || p.colorName)
-            .map(p => ({ ...p, id: generateId(), _source: 'document' }));
-          merged.paint = [...(merged.paint || []), ...newPaint];
-        }
-
-        // Merge systems — document data overrides lookup
-        if (parsed.systems) {
-          for (const section of ['hvac', 'waterHeater', 'electrical', 'plumbing']) {
-            if (parsed.systems[section]) {
-              for (const [key, value] of Object.entries(parsed.systems[section])) {
-                if (value && merged.systems[section]) {
-                  merged.systems[section][key] = value;
-                  merged._sources.documents.push(`systems.${section}.${key}`);
-                }
-              }
-            }
-          }
-        }
-
-        // Merge exterior
-        if (parsed.exterior) {
-          for (const section of ['roof', 'gutters', 'siding']) {
-            if (parsed.exterior[section]) {
-              for (const [key, value] of Object.entries(parsed.exterior[section])) {
-                if (value && merged.exterior?.[section] && !merged.exterior[section][key]) {
-                  merged.exterior[section][key] = value;
-                }
-              }
-            }
-          }
-        }
-
-        // Merge emergency
-        if (parsed.emergency) {
-          for (const section of ['waterShutoff', 'gasShutoff', 'electricalPanel']) {
-            if (parsed.emergency[section]) {
-              for (const [key, value] of Object.entries(parsed.emergency[section])) {
-                if (value && merged.emergency?.[section] && !merged.emergency[section][key]) {
-                  merged.emergency[section][key] = value;
-                }
-              }
-            }
-          }
-        }
-
-        // Store document records
-        const docs = [
-          ...documents.map(d => ({
-            id: d.id,
-            name: d.name,
-            type: d.type,
-            uploadDate: new Date().toISOString(),
-          })),
-          ...pastedTexts.map(t => ({
-            id: t.id,
-            name: t.label,
-            type: t.type,
-            uploadDate: new Date().toISOString(),
-          })),
-        ];
-        merged.documents = [...(merged.documents || []), ...docs];
-
-        onChange(merged);
-        setProcessed(true);
-
-        const fieldCount = (merged._sources.documents || []).length +
-          (parsed.rooms?.filter(r => r.name).length || 0) +
-          (parsed.appliances?.filter(a => a.type || a.brand).length || 0);
-        toast.success(`Extracted ${fieldCount}+ data points from your documents!`);
-      } catch {
-        toast.error('Could not parse extracted data. Try pasting cleaner text.');
+      // Store pasted text content for future Homer processing
+      if (pastedTexts.length > 0) {
+        merged._documentTexts = [...(merged._documentTexts || []), ...pastedTexts.map(t => ({
+          id: t.id, type: t.type, text: t.text,
+        }))];
       }
+
+      onChange(merged);
+      setProcessed(true);
+      toast.success(`${docs.length} document(s) saved! Continue to review your home profile.`);
     } catch {
-      toast.error('AI extraction failed. Try with shorter text sections.');
+      toast.error('Failed to save documents. Please try again.');
     } finally {
       setProcessingAll(false);
     }
@@ -549,7 +461,7 @@ const DocumentUploadStep = ({ data, onChange }) => {
   return (
     <StepLayout
       title="Upload Your Documents"
-      subtitle="This is where the magic happens — upload your closing docs, appraisal, inspection, or disclosures and AI will extract everything"
+      subtitle="Upload your closing docs, appraisals, inspections, or disclosures — Homer (Ask AI) can extract the details after setup"
       icon={FileText}
       tip="The more documents you provide, the more complete your home profile will be. Appraisals are especially good — they have dimensions, sqft, room counts, and more."
     >
@@ -673,9 +585,9 @@ const DocumentUploadStep = ({ data, onChange }) => {
             className="w-full flex items-center justify-center gap-3 py-4 bg-hb-teal hover:bg-hb-teal-700 text-white rounded-2xl transition-all disabled:opacity-60 font-semibold text-lg shadow-lg"
           >
             {processingAll ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Extracting data from {totalDocs} document{totalDocs > 1 ? 's' : ''}...</>
+              <><Loader2 className="w-5 h-5 animate-spin" /> Saving {totalDocs} document{totalDocs > 1 ? 's' : ''}...</>
             ) : (
-              <><Sparkles className="w-5 h-5" /> Extract Data from {totalDocs} Document{totalDocs > 1 ? 's' : ''}</>
+              <><Sparkles className="w-5 h-5" /> Save {totalDocs} Document{totalDocs > 1 ? 's' : ''} &amp; Continue</>
             )}
           </button>
         )}
@@ -687,9 +599,9 @@ const DocumentUploadStep = ({ data, onChange }) => {
             className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center"
           >
             <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-2" />
-            <h3 className="font-semibold text-green-900">Documents Processed!</h3>
-            <p className="text-sm text-green-700 mt-1">Your home profile has been populated. Continue to review everything.</p>
-            <p className="text-xs text-green-600 mt-2">You can add more documents or continue to review.</p>
+            <h3 className="font-semibold text-green-900">Documents Saved!</h3>
+            <p className="text-sm text-green-700 mt-1">Your documents are ready. After setup, use Homer (Ask AI) to extract property details automatically.</p>
+            <p className="text-xs text-green-600 mt-2">Continue to review your home profile.</p>
           </motion.div>
         )}
 

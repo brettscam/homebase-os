@@ -131,6 +131,11 @@ export async function upsertSystem(system) {
   return data;
 }
 
+export async function deleteSystem(systemId) {
+  const { error } = await supabase.from('systems').delete().eq('id', systemId);
+  if (error) throw error;
+}
+
 // ─── Paint Records ──────────────────────────────────────────
 
 export async function getPaintRecords(propertyId) {
@@ -183,6 +188,11 @@ export async function upsertSmartHome(item) {
   return data;
 }
 
+export async function deleteSmartHome(smartHomeId) {
+  const { error } = await supabase.from('smart_home').delete().eq('id', smartHomeId);
+  if (error) throw error;
+}
+
 // ─── Emergency Info ─────────────────────────────────────────
 
 export async function getEmergencyInfo(propertyId) {
@@ -206,6 +216,11 @@ export async function upsertEmergencyInfo(item) {
   return data;
 }
 
+export async function deleteEmergencyInfo(infoId) {
+  const { error } = await supabase.from('emergency_info').delete().eq('id', infoId);
+  if (error) throw error;
+}
+
 // ─── Exterior ───────────────────────────────────────────────
 
 export async function getExterior(propertyId) {
@@ -227,6 +242,11 @@ export async function upsertExterior(item) {
 
   if (error) throw error;
   return data;
+}
+
+export async function deleteExterior(exteriorId) {
+  const { error } = await supabase.from('exterior').delete().eq('id', exteriorId);
+  if (error) throw error;
 }
 
 // ─── Contacts ───────────────────────────────────────────────
@@ -389,6 +409,16 @@ export async function upsertProjectQuote(quote) {
 
 export async function deleteProjectQuote(quoteId) {
   const { error } = await supabase.from('project_quotes').delete().eq('id', quoteId);
+  if (error) throw error;
+}
+
+export async function deleteProjectVendor(vendorId) {
+  const { error } = await supabase.from('project_vendors').delete().eq('id', vendorId);
+  if (error) throw error;
+}
+
+export async function deleteProperty(propertyId) {
+  const { error } = await supabase.from('properties').delete().eq('id', propertyId);
   if (error) throw error;
 }
 

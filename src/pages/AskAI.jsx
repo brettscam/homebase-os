@@ -1,14 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // base44 LLM integration removed — AI chat will use a new backend
-import {
-  getHomeData,
-  getChatHistory,
-  createConversation,
-  updateConversation,
-  deleteConversation,
-  generateId,
-} from '../lib/homeDataStore';
+import { useProperty } from '../lib/PropertyContext';
+import { useAuth } from '../lib/AuthContext';
+import { getChatConversations, upsertChatConversation, deleteChatConversation } from '../lib/supabaseDataStore';
+import { toast } from 'sonner';
 import {
   Send,
   Loader2,
@@ -33,103 +29,62 @@ import {
   X,
 } from 'lucide-react';
 
-// Build the full home context prompt
-function buildHomeContext(homeData) {
-  const roomsList = homeData.rooms?.length > 0
-    ? homeData.rooms.map(r => `- ${r.name}: ${r.width || ''}' × ${r.length || ''}', Ceiling: ${r.ceilingHeight || 'N/A'}, Flooring: ${r.flooringType || 'N/A'}`).join('\n')
-    : `- Kitchen: 16'4" × 18'2" (297 sq ft), Ceiling: 9'6", Flooring: White Oak 7" wide plank
-- Living Room: 18' × 22', Ceiling: 10' (vaulted)
-- Master Bedroom: 16' × 18'
-- Bedroom 2: 12' × 14'
-- Bedroom 3: 12' × 14'
-- Dining Room: 12' × 14'
-- Master Bathroom: 10' × 12'
-- Guest Bathroom: 8' × 10'`;
+// Build the full home context prompt from PropertyContext data
+function buildHomeContext(activeProperty, homeData) {
+  const property = activeProperty || {};
+  const data = homeData || {};
+  const rooms = data.rooms || [];
+  const appliances = data.appliances || [];
+  const systems = data.systems || [];
+  const paintRecords = data.paintRecords || [];
+  const smartHome = data.smartHome || [];
+  const emergencyInfo = data.emergencyInfo || [];
+  const exterior = data.exterior || [];
+  const contacts = data.contacts || [];
+  const documents = data.documents || [];
 
-  const appliancesList = homeData.appliances?.length > 0
-    ? homeData.appliances.map(a => `- ${a.name}: ${a.brand || ''} ${a.model || ''} (Installed: ${a.installDate || 'N/A'}, Warranty: ${a.warrantyExpiry || 'N/A'})`).join('\n')
-    : `- Refrigerator: Sub-Zero BI-42U (Installed March 2021, Warranty until March 2026)
-- Dishwasher: Bosch 800 Series SHPM88Z75N
-- Range: Wolf 36" Dual Fuel DF366 (Installed January 2022)`;
+  const sections = [];
 
-  const paintList = homeData.paint?.length > 0
-    ? homeData.paint.map(p => `- ${p.location || 'Room'}: ${p.brand || ''} "${p.colorName || ''}" (${p.colorCode || ''}), Finish: ${p.finish || 'N/A'}`).join('\n')
-    : `- Walls: Benjamin Moore "Chantilly Lace" (OC-65)
-- Trim: Benjamin Moore "White Dove" (OC-17)
-- Accent/Cabinets: Farrow & Ball "Hague Blue" (No. 30)`;
+  sections.push(`PROPERTY: ${property.address || 'No address set'}${property.city ? `, ${property.city}` : ''}${property.state ? `, ${property.state}` : ''}`);
+  sections.push(`Year Built: ${property.year_built || 'Unknown'} | Sqft: ${property.sqft || 'Unknown'} | Bedrooms: ${property.bedrooms || 'Unknown'} | Bathrooms: ${property.bathrooms || 'Unknown'} | Lot: ${property.lot_size || 'Unknown'}`);
 
-  return `You are HomeBase AI, an intelligent assistant for a homeowner.
-You have COMPLETE knowledge of this home and can answer detailed questions about every aspect of it.
-When users ask about home improvement projects, provide specific advice based on what's actually in this home (existing materials, brands, specs, ages).
-When doing calculations (paint coverage, flooring area, etc.), show your math step by step.
+  if (rooms.length > 0) {
+    sections.push(`ROOMS:\n${rooms.map(r => `- ${r.name}${r.type ? ` (${r.type})` : ''}${r.sqft ? ` ${r.sqft} sqft` : ''}`).join('\n')}`);
+  } else { sections.push('ROOMS: No rooms recorded yet'); }
 
-PROPERTY:
-- Address: ${homeData.property?.address || '142 Cascade Drive'}, ${homeData.property?.city || 'Mill Valley'}, ${homeData.property?.state || 'CA'}
-- Year Built: ${homeData.property?.yearBuilt || '1987'}
-- Total Square Feet: ${homeData.property?.sqft || '2,847'} sq ft
-- Lot Size: ${homeData.property?.lotSize || '0.31 acres'}
-- Bedrooms: ${homeData.property?.bedrooms || '4'}, Bathrooms: ${homeData.property?.bathrooms || '3.5'}
-- Stories: ${homeData.property?.stories || '2'}
+  if (appliances.length > 0) {
+    sections.push(`APPLIANCES:\n${appliances.map(a => `- ${a.name || a.type}: ${[a.brand, a.model].filter(Boolean).join(' ') || 'No details'}`).join('\n')}`);
+  } else { sections.push('APPLIANCES: No appliances recorded yet'); }
 
-ROOMS & DIMENSIONS:
-${roomsList}
+  if (systems.length > 0) {
+    sections.push(`SYSTEMS:\n${systems.map(s => `- ${s.type}: ${JSON.stringify(s.data || {})}`).join('\n')}`);
+  } else { sections.push('SYSTEMS: No systems recorded yet'); }
 
-PAINT COLORS:
-${paintList}
+  if (paintRecords.length > 0) {
+    sections.push(`PAINT:\n${paintRecords.map(p => `- ${p.room_name || 'Room'}: ${[p.brand, p.color_name].filter(Boolean).join(' ') || 'Unknown'} ${p.color_hex || ''}`).join('\n')}`);
+  }
 
-WINDOWS:
-- Kitchen: 2× Casement, Milgard Tuscany Series, Rough Opening: 36"w × 48"h, Glass: 32"w × 44"h
-- Living Room: 3-Panel Bay Window (Center: 60"w × 72"h, Sides: 30"w × 72"h each), Side Window 48"w × 60"h
-- Master Bedroom: 2× Double-Hung, Andersen 400 Series, 42"w × 60"h
+  if (smartHome.length > 0) {
+    sections.push(`SMART HOME:\n${smartHome.map(s => `- ${s.type}: ${s.name || ''} ${JSON.stringify(s.data || {})}`).join('\n')}`);
+  }
 
-APPLIANCES:
-${appliancesList}
+  if (emergencyInfo.length > 0) {
+    sections.push(`EMERGENCY SHUTOFFS:\n${emergencyInfo.map(e => `- ${e.type}: ${e.data?.location || 'Location not set'} ${e.data?.instructions || ''}`).join('\n')}`);
+  }
 
-MECHANICAL SYSTEMS:
-- HVAC: ${homeData.systems?.hvac?.brand || 'Carrier'} ${homeData.systems?.hvac?.model || ''}, Type: ${homeData.systems?.hvac?.type || 'Central AC + Gas Furnace'}, Thermostat: Nest Learning (Hallway)
-- Water Heater: ${homeData.systems?.waterHeater?.brand || 'Rheem'} ${homeData.systems?.waterHeater?.model || 'Performance Platinum'} ${homeData.systems?.waterHeater?.capacity || '50'} Gallon (${homeData.systems?.waterHeater?.type || 'Tank'}, Installed ${homeData.systems?.waterHeater?.installDate || '2023'})
-- Electrical Panel: ${homeData.systems?.electrical?.amperage || '200'}A Main Panel, ${homeData.systems?.electrical?.circuits || '16'} Circuits, Location: ${homeData.systems?.electrical?.panelLocation || 'Garage'}
+  if (contacts.length > 0) {
+    sections.push(`SERVICE CONTACTS:\n${contacts.map(c => `- ${c.name}${c.role ? ` (${c.role})` : ''}: ${c.phone || 'No phone'}`).join('\n')}`);
+  }
 
-EMERGENCY SHUTOFFS:
-- Water Main: ${homeData.emergency?.waterShutoff?.location || 'Front Yard, Blue Lid'} - ${homeData.emergency?.waterShutoff?.instructions || 'Turn clockwise to close'}
-- Gas Main: ${homeData.emergency?.gasShutoff?.location || 'North Wall'} - ${homeData.emergency?.gasShutoff?.instructions || 'Wrench attached, turn perpendicular to pipe'}
-- Electrical Panel: ${homeData.emergency?.electricalPanel?.location || 'Garage Panel A'} - ${homeData.emergency?.electricalPanel?.instructions || 'Main breaker top left'}
+  if (documents.length > 0) {
+    sections.push(`DOCUMENTS:\n${documents.map(d => `- ${d.name} (${d.type || 'unknown'})`).join('\n')}`);
+  }
 
-SMART HOME:
-- WiFi: ${homeData.smartHome?.wifi?.networkName || 'Redwood_Mesh_Pro'} (Password: ${homeData.smartHome?.wifi?.password || 'TreeHouse2026!'})
-- Front Door: Yale Assure Lock (Code: ${homeData.smartHome?.doorLocks?.[0]?.code || '4821#'})
-- Garage: ${homeData.smartHome?.garage?.brand || 'LiftMaster'} Opener (Code: ${homeData.smartHome?.garage?.code || '8900'})
-- Security: ${homeData.smartHome?.security?.provider || 'ADT Pulse'}, Panel at ${homeData.smartHome?.security?.panelLocation || 'Kitchen Entrance'}
+  return `You are Homer, the HomeBase AI assistant. You know everything about this home and help the owner with questions about their property, maintenance, and home management.
 
-EXTERIOR:
-- Roof: ${homeData.exterior?.roof?.material || 'GAF Timberline Asphalt Shingle'} (Installed ${homeData.exterior?.roof?.installDate || '2018'})
-- Siding: ${homeData.exterior?.siding?.material || 'Wood'}
-- Gutters: ${homeData.exterior?.gutters?.type || 'Seamless Aluminum 5"'}, French Drain System
+${sections.join('\n\n')}
 
-LANDSCAPE:
-- Coast Redwood (3) - Front Yard, 65-70 ft tall, Planted 1987
-- Japanese Maple (2) - Back Yard, 12-15 ft tall, Planted 2015
-- Irrigation: ${homeData.landscape?.irrigation?.controller || 'Hunter X-Core'} Controller (${homeData.landscape?.irrigation?.zones || '4'} zones, Controller in Garage)
-
-SERVICE PROVIDERS:
-${homeData.contacts?.length > 0
-  ? homeData.contacts.map(c => `- ${c.trade || 'Provider'}: ${c.name}${c.company ? ` (${c.company})` : ''}, Phone: ${c.phone || 'N/A'}${c.isEmergency ? ' [EMERGENCY]' : ''}${c.jobs?.length > 0 ? `, Last job: ${c.jobs[c.jobs.length - 1].description} ($${c.jobs[c.jobs.length - 1].cost || '?'}, ${c.jobs[c.jobs.length - 1].date || '?'})` : ''}`).join('\n')
-  : '- No service providers added yet'}
-
-UTILITY ACCOUNTS:
-${homeData.utilities?.length > 0
-  ? homeData.utilities.map(u => `- ${u.utilityType || 'Utility'}: ${u.provider}, Account: ${u.accountNumber || 'N/A'}, ~$${u.avgMonthlyCost || '?'}/mo, Autopay: ${u.autopay ? 'Yes' : 'No'}`).join('\n')
-  : '- No utility accounts added yet'}
-
-When answering:
-1. Be helpful and conversational
-2. Use specific details from this home's data
-3. For projects like "redo my roof", reference the CURRENT roof type, age, and material so the homeowner knows what to tell contractors
-4. For window blinds, use the rough opening dimensions (subtract 1/4" for clearance)
-5. For paint calculations, use room dimensions to compute wall area (height × perimeter - windows/doors), then divide by coverage per gallon (typically 350-400 sq ft/gallon)
-6. If asked about something not in the data, say so politely
-7. For measurements, be precise
-8. When recommending contractors/quotes, reference the homeowner's existing service providers if applicable`;
+If information is missing, say so honestly. Never make up data. Suggest the user add missing information through HomeBase.`;
 }
 
 // Suggested starter questions organized by category
@@ -199,18 +154,27 @@ export default function AskAI() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  const homeData = getHomeData();
-  const homeContext = buildHomeContext(homeData);
+  const { activeProperty, homeData } = useProperty();
+  const { user } = useAuth();
+  const homeContext = buildHomeContext(activeProperty, homeData);
 
-  // Load conversations on mount
+  // Load conversations from Supabase on mount
   useEffect(() => {
-    const loaded = getChatHistory();
-    setConversations(loaded);
-    if (loaded.length > 0) {
-      setActiveConvoId(loaded[0].id);
-      setMessages(loaded[0].messages || []);
-    }
-  }, []);
+    if (!user?.id) return;
+    const loadConversations = async () => {
+      try {
+        const loaded = await getChatConversations(user.id);
+        setConversations(loaded);
+        if (loaded.length > 0) {
+          setActiveConvoId(loaded[0].id);
+          setMessages(loaded[0].messages || []);
+        }
+      } catch (err) {
+        console.error('Failed to load conversations:', err);
+      }
+    };
+    loadConversations();
+  }, [user?.id]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -222,11 +186,14 @@ export default function AskAI() {
     inputRef.current?.focus();
   }, [activeConvoId]);
 
-  const handleNewChat = () => {
-    const convo = createConversation('New Chat');
-    setConversations(prev => [convo, ...prev]);
-    setActiveConvoId(convo.id);
-    setMessages([]);
+  const handleNewChat = async () => {
+    if (!user?.id) return;
+    try {
+      const convo = await upsertChatConversation({ user_id: user.id, property_id: activeProperty?.id, title: 'New Chat', messages: [] });
+      setConversations(prev => [convo, ...prev]);
+      setActiveConvoId(convo.id);
+      setMessages([]);
+    } catch (err) { console.error('Failed to create conversation:', err); }
   };
 
   const handleSelectConvo = (convo) => {
@@ -234,19 +201,18 @@ export default function AskAI() {
     setMessages(convo.messages || []);
   };
 
-  const handleDeleteConvo = (e, id) => {
+  const handleDeleteConvo = async (e, id) => {
     e.stopPropagation();
-    const updated = deleteConversation(id);
-    setConversations(updated);
-    if (activeConvoId === id) {
-      if (updated.length > 0) {
-        setActiveConvoId(updated[0].id);
-        setMessages(updated[0].messages || []);
-      } else {
-        setActiveConvoId(null);
-        setMessages([]);
+    try {
+      await deleteChatConversation(id);
+      const remaining = conversations.filter(c => c.id !== id);
+      setConversations(remaining);
+      if (activeConvoId === id) {
+        if (remaining.length > 0) { setActiveConvoId(remaining[0].id); setMessages(remaining[0].messages || []); }
+        else { setActiveConvoId(null); setMessages([]); }
       }
-    }
+      toast.success('Conversation deleted');
+    } catch (err) { console.error('Failed to delete conversation:', err); }
   };
 
   const handleRenameConvo = (e, id) => {
@@ -256,13 +222,14 @@ export default function AskAI() {
     setEditTitleValue(convo?.title || '');
   };
 
-  const handleSaveTitle = (e, id) => {
+  const handleSaveTitle = async (e, id) => {
     e.stopPropagation();
-    if (editTitleValue.trim()) {
-      const updated = updateConversation(id, { title: editTitleValue.trim() });
-      setConversations(getChatHistory());
-    }
-    setEditingTitle(null);
+    if (!editTitleValue.trim()) return;
+    try {
+      await upsertChatConversation({ id, title: editTitleValue.trim() });
+      setConversations(prev => prev.map(c => c.id === id ? { ...c, title: editTitleValue.trim() } : c));
+      setEditingTitle(null);
+    } catch (err) { console.error('Failed to rename conversation:', err); }
   };
 
   const handleSendMessage = async (text) => {
@@ -272,10 +239,16 @@ export default function AskAI() {
     // Create a conversation if none exists
     let convoId = activeConvoId;
     if (!convoId) {
-      const convo = createConversation('New Chat');
-      setConversations(prev => [convo, ...prev]);
-      convoId = convo.id;
-      setActiveConvoId(convo.id);
+      if (!user?.id) return;
+      try {
+        const convo = await upsertChatConversation({ user_id: user.id, property_id: activeProperty?.id, title: 'New Chat', messages: [] });
+        setConversations(prev => [convo, ...prev]);
+        convoId = convo.id;
+        setActiveConvoId(convo.id);
+      } catch (err) {
+        console.error('Failed to create conversation:', err);
+        return;
+      }
     }
 
     const userMessage = { role: 'user', content: question, timestamp: new Date().toISOString() };
@@ -303,16 +276,23 @@ export default function AskAI() {
         ? question.slice(0, 60) + (question.length > 60 ? '...' : '')
         : undefined;
 
-      updateConversation(convoId, {
+      await upsertChatConversation({
+        id: convoId,
         messages: updatedMessages,
         ...(autoTitle ? { title: autoTitle } : {}),
       });
-      setConversations(getChatHistory());
-    } catch {
+      setConversations(prev => prev.map(c => c.id === convoId
+        ? { ...c, messages: updatedMessages, ...(autoTitle ? { title: autoTitle } : {}) }
+        : c
+      ));
+    } catch (err) {
+      console.error('Failed to send message:', err);
       const errorMessage = { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.', timestamp: new Date().toISOString() };
       const updatedMessages = [...newMessages, errorMessage];
       setMessages(updatedMessages);
-      updateConversation(convoId, { messages: updatedMessages });
+      try {
+        await upsertChatConversation({ id: convoId, messages: updatedMessages });
+      } catch (saveErr) { console.error('Failed to save error message:', saveErr); }
     } finally {
       setIsLoading(false);
     }
@@ -392,7 +372,7 @@ export default function AskAI() {
                             </p>
                             <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              {formatTimestamp(convo.updatedAt || convo.createdAt)}
+                              {formatTimestamp(convo.updated_at || convo.created_at)}
                               <span className="text-gray-300 mx-1">·</span>
                               {(convo.messages || []).filter(m => m.role === 'user').length} messages
                             </p>

@@ -144,35 +144,6 @@ const NavCard = ({ icon: Icon, title, description, to, delay }) => (
   </motion.div>
 );
 
-// Sub-nav
-const SubNav = ({ activeView, setActiveView }) => {
-  const items = [
-    { id: 'home', icon: Home, label: 'Dashboard' },
-    { id: 'rooms', icon: Grid3X3, label: 'Rooms' },
-    { id: 'emergency', icon: AlertTriangle, label: 'Emergency' },
-  ];
-
-  return (
-    <div className="sticky top-[3.5rem] z-20 flex items-center gap-2 px-6 py-3 bg-white/95 backdrop-blur-xl border-b border-gray-100">
-      {items.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => setActiveView(item.id)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            activeView === item.id
-              ? item.id === 'emergency'
-                ? 'bg-red-50 text-red-600'
-                : 'bg-hb-teal-50 text-hb-teal'
-              : 'text-hb-slate hover:text-hb-navy hover:bg-gray-50'
-          }`}
-        >
-          <item.icon className="w-4 h-4" strokeWidth={1.5} />
-          <span>{item.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-};
 
 // Dashboard View
 const DashboardView = () => {
@@ -456,6 +427,36 @@ const EmergencyView = () => {
           })()}
         </motion.div>
       </div>
+    </div>
+  );
+};
+
+// Sub-nav within Dashboard for Rooms & Emergency
+const SubNav = ({ activeView, setActiveView }) => {
+  const items = [
+    { id: 'home', icon: Home, label: 'Dashboard' },
+    { id: 'rooms', icon: Grid3X3, label: 'Rooms' },
+    { id: 'emergency', icon: AlertTriangle, label: 'Emergency' },
+  ];
+
+  return (
+    <div className="sticky top-[6.5rem] z-20 flex items-center gap-2 px-6 py-3 bg-white/95 backdrop-blur-xl border-b border-gray-100">
+      {items.map((item) => (
+        <button
+          key={item.id}
+          onClick={() => setActiveView(item.id)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeView === item.id
+              ? item.id === 'emergency'
+                ? 'bg-red-50 text-red-600'
+                : 'bg-hb-teal-50 text-hb-teal'
+              : 'text-hb-slate hover:text-hb-navy hover:bg-gray-50'
+          }`}
+        >
+          <item.icon className="w-4 h-4" strokeWidth={1.5} />
+          <span>{item.label}</span>
+        </button>
+      ))}
     </div>
   );
 };

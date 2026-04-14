@@ -17,73 +17,125 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-// Emergency marker definitions
-const EMERGENCY_MARKERS = [
-  {
+// Default emergency marker layout positions
+const MARKER_POSITIONS = {
+  water_shutoff: { parcel: { top: '78%', left: '28%' }, floorplan: { top: '85%', left: '25%' } },
+  gas_shutoff: { parcel: { top: '42%', left: '12%' }, floorplan: { top: '40%', left: '5%' } },
+  electrical_panel: { parcel: { top: '55%', left: '82%' }, floorplan: { top: '30%', left: '72%' } },
+  water_heater: { parcel: { top: '60%', left: '75%' }, floorplan: { top: '38%', left: '68%' } },
+};
+
+const MARKER_META = {
+  water_shutoff: { icon: Droplets, color: 'bg-blue-500', ringColor: 'ring-blue-400', pulse: true },
+  gas_shutoff: { icon: Flame, color: 'bg-orange-500', ringColor: 'ring-orange-400', pulse: true },
+  electrical_panel: { icon: Zap, color: 'bg-yellow-500', ringColor: 'ring-yellow-400', pulse: true },
+  water_heater: { icon: Thermometer, color: 'bg-cyan-500', ringColor: 'ring-cyan-400', pulse: false },
+};
+
+// Build emergency markers from real data (or show defaults if no data)
+function buildEmergencyMarkers(emergencyInfo, systems) {
+  const markers = [];
+
+  // Water shutoff
+  const waterInfo = emergencyInfo?.find(e => e.type === 'water_shutoff') || {};
+  markers.push({
     id: 'water_shutoff',
     label: 'Water Main Shutoff',
-    icon: Droplets,
-    color: 'bg-blue-500',
-    ringColor: 'ring-blue-400',
-    position: { top: '78%', left: '28%' },
-    location: 'Front Yard',
-    detail: 'Blue Lid · Turn Clockwise to Close',
-    pulse: true,
-  },
-  {
+    location: waterInfo.location || 'Not set',
+    detail: waterInfo.instructions || 'Add in Manual',
+    ...MARKER_META.water_shutoff,
+    position: MARKER_POSITIONS.water_shutoff.parcel,
+  });
+
+  // Gas shutoff
+  const gasInfo = emergencyInfo?.find(e => e.type === 'gas_shutoff') || {};
+  markers.push({
     id: 'gas_shutoff',
     label: 'Gas Shutoff',
-    icon: Flame,
-    color: 'bg-orange-500',
-    ringColor: 'ring-orange-400',
-    position: { top: '42%', left: '12%' },
-    location: 'North Wall (Left Side)',
-    detail: 'Wrench Attached · Turn Perpendicular to Pipe',
-    pulse: true,
-  },
-  {
+    location: gasInfo.location || 'Not set',
+    detail: gasInfo.instructions || 'Add in Manual',
+    ...MARKER_META.gas_shutoff,
+    position: MARKER_POSITIONS.gas_shutoff.parcel,
+  });
+
+  // Electrical panel
+  const elecInfo = emergencyInfo?.find(e => e.type === 'electrical_panel') || {};
+  markers.push({
     id: 'electrical_panel',
     label: 'Electrical Panel',
-    icon: Zap,
-    color: 'bg-yellow-500',
-    ringColor: 'ring-yellow-400',
-    position: { top: '55%', left: '82%' },
-    location: 'Garage',
-    detail: '200A Main Panel · Main Breaker Top Left',
-    pulse: true,
-  },
-  {
+    location: elecInfo.location || 'Not set',
+    detail: elecInfo.instructions || 'Add in Manual',
+    ...MARKER_META.electrical_panel,
+    position: MARKER_POSITIONS.electrical_panel.parcel,
+  });
+
+  // Water heater (from systems data)
+  const whSystem = systems?.find(s => s.type === 'water_heater');
+  const whData = whSystem?.data || {};
+  markers.push({
     id: 'water_heater',
     label: 'Water Heater',
-    icon: Thermometer,
-    color: 'bg-cyan-500',
-    ringColor: 'ring-cyan-400',
-    position: { top: '60%', left: '75%' },
-    location: 'Garage',
-    detail: 'Rheem Performance Platinum 50 Gal (2023)',
-    pulse: false,
-  },
-];
+    location: whData.location || 'Not set',
+    detail: [whData.brand, whData.model, whData.capacity && `${whData.capacity} Gal`, whData.installDate && `(${whData.installDate})`].filter(Boolean).join(' ') || 'Add in Manual',
+    ...MARKER_META.water_heater,
+    position: MARKER_POSITIONS.water_heater.parcel,
+  });
 
-// Room data for the flat floor plan
-const ROOMS = [
-  { id: 'living', name: 'Living Room', dims: "18' × 22'", x: 5, y: 18, w: 30, h: 28, color: '#EEF2FF' },
-  { id: 'kitchen', name: 'Kitchen', dims: "16'4\" × 18'2\"", x: 35, y: 18, w: 25, h: 22, color: '#F0FDF4' },
-  { id: 'dining', name: 'Dining', dims: "12' × 14'", x: 35, y: 40, w: 18, h: 16, color: '#FFF7ED' },
-  { id: 'master', name: 'Master Bed', dims: "16' × 18'", x: 5, y: 50, w: 28, h: 24, color: '#F5F3FF' },
-  { id: 'bed2', name: 'Bed 2', dims: "12' × 14'", x: 35, y: 58, w: 18, h: 16, color: '#FDF2F8' },
-  { id: 'bed3', name: 'Bed 3', dims: "12' × 14'", x: 55, y: 58, w: 18, h: 16, color: '#FFF1F2' },
-  { id: 'bath_master', name: 'Master Bath', dims: "10' × 12'", x: 5, y: 46, w: 15, h: 10, color: '#ECFEFF', isBath: true },
-  { id: 'bath_guest', name: 'Guest Bath', dims: "8' × 10'", x: 60, y: 40, w: 13, h: 12, color: '#ECFEFF', isBath: true },
-  { id: 'garage', name: 'Garage', dims: "20' × 22'", x: 60, y: 18, w: 20, h: 20, color: '#F1F5F9', isGarage: true },
-];
+  return markers;
+}
+
+// Room pastel colors for floor plan rendering
+const ROOM_COLORS = ['#EEF2FF', '#F0FDF4', '#FFF7ED', '#F5F3FF', '#FDF2F8', '#FFF1F2', '#ECFEFF', '#F1F5F9', '#FEF3C7'];
+
+// Generate a simple grid layout for rooms from real data
+function buildRoomLayout(rooms) {
+  if (!rooms || rooms.length === 0) return [];
+
+  // Simple grid layout: distribute rooms evenly
+  const count = rooms.length;
+  const cols = count <= 4 ? 2 : 3;
+  const cellW = Math.floor(75 / cols);
+  const cellH = 22;
+  const startX = 5;
+  const startY = 18;
+
+  return rooms.map((room, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    return {
+      id: room.id || `room-${i}`,
+      name: room.name,
+      dims: room.sqft ? `${room.sqft} sq ft` : '',
+      x: startX + col * (cellW + 2),
+      y: startY + row * (cellH + 2),
+      w: cellW,
+      h: cellH,
+      color: ROOM_COLORS[i % ROOM_COLORS.length],
+      isBath: /bath/i.test(room.type || room.name),
+      isGarage: /garage/i.test(room.type || room.name),
+    };
+  });
+}
 
 // Parcel Property View - flat aerial layout
-export default function HouseModel3D({ onRoomClick, darkMode }) {
+export default function HouseModel3D({ onRoomClick, darkMode, property, rooms, emergencyInfo, systems }) {
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [showMarkers, setShowMarkers] = useState(true);
   const [hoveredRoom, setHoveredRoom] = useState(null);
   const [viewMode, setViewMode] = useState('parcel'); // 'parcel' or 'floorplan'
+
+  const EMERGENCY_MARKERS = buildEmergencyMarkers(emergencyInfo, systems);
+  const ROOMS = buildRoomLayout(rooms);
+
+  // Property display values
+  const propertyName = property?.address?.split(',')[0] || property?.name || 'My Home';
+  const specs = [
+    property?.sqft && `${property.sqft} sq ft`,
+    property?.bedrooms && `${property.bedrooms} Bed`,
+    property?.bathrooms && `${property.bathrooms} Bath`,
+  ].filter(Boolean).join(' \u00B7 ') || 'Add property details';
+  const lotInfo = property?.lot_size ? `${property.lot_size} Acres` : '';
+  const cityState = [property?.city, property?.state].filter(Boolean).join(', ');
 
   const handleRoomClick = (room) => {
     if (onRoomClick) {
@@ -191,10 +243,10 @@ export default function HouseModel3D({ onRoomClick, darkMode }) {
                     <Home className={`w-8 h-8 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                   </div>
                   <p className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    The Miller Residence
+                    {propertyName}
                   </p>
                   <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-gray-500'} mt-1`}>
-                    2,847 sq ft · 4 Bed · 3.5 Bath
+                    {specs}
                   </p>
                   <div className={`mt-4 flex items-center gap-1.5 px-4 py-2 ${darkMode ? 'bg-blue-600' : 'bg-blue-600'} text-white rounded-lg text-sm font-medium`}>
                     <Eye className="w-4 h-4" />
@@ -222,8 +274,8 @@ export default function HouseModel3D({ onRoomClick, darkMode }) {
               {/* Property address label */}
               <div className={`absolute bottom-4 left-4 ${darkMode ? 'bg-slate-700/90' : 'bg-white/90'} backdrop-blur-sm rounded-xl px-4 py-2.5 shadow-lg border ${darkMode ? 'border-slate-600' : 'border-gray-200'}`}>
                 <p className={`text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-gray-400'} tracking-widest uppercase`}>Property Parcel</p>
-                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>0.31 Acres · R-1 Zoning</p>
-                <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'} mt-0.5`}>Mill Valley, CA</p>
+                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{lotInfo || 'Lot size not set'}</p>
+                {cityState && <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-gray-500'} mt-0.5`}>{cityState}</p>}
               </div>
 
               {/* Emergency Markers on Parcel View */}
@@ -280,6 +332,15 @@ export default function HouseModel3D({ onRoomClick, darkMode }) {
 
               {/* Rooms */}
               <div className="relative w-full h-full">
+                {ROOMS.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <Home className={`w-10 h-10 mx-auto mb-2 ${darkMode ? 'text-slate-600' : 'text-gray-300'}`} />
+                      <p className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>No rooms added yet</p>
+                      <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-gray-400'} mt-1`}>Add rooms in onboarding or the Manual</p>
+                    </div>
+                  </div>
+                )}
                 {ROOMS.map((room) => (
                   <motion.div
                     key={room.id}
@@ -332,14 +393,7 @@ export default function HouseModel3D({ onRoomClick, darkMode }) {
                 {/* Emergency Markers on Floor Plan */}
                 <AnimatePresence>
                   {showMarkers && EMERGENCY_MARKERS.map((marker) => {
-                    // Remap marker positions for floor plan view
-                    const floorPlanPositions = {
-                      water_shutoff: { top: '85%', left: '25%' },
-                      gas_shutoff: { top: '40%', left: '5%' },
-                      electrical_panel: { top: '30%', left: '72%' },
-                      water_heater: { top: '38%', left: '68%' },
-                    };
-                    const pos = floorPlanPositions[marker.id] || marker.position;
+                    const pos = MARKER_POSITIONS[marker.id]?.floorplan || marker.position;
 
                     return (
                       <motion.button

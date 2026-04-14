@@ -9,7 +9,9 @@ import {
   Filter, Users
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getHomeData, saveHomeData, generateId } from '../lib/homeDataStore';
+import { useProperty } from '../lib/PropertyContext';
+import { useAuth } from '../lib/AuthContext';
+import { upsertContact, deleteContact, upsertUtility, deleteUtility } from '../lib/supabaseDataStore';
 
 // ─── Trade & Utility Type Configs ─────────────────────────────────────
 const TRADE_TYPES = [
@@ -247,7 +249,7 @@ const ProviderModal = ({ isOpen, onClose, onSave, editData }) => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
     onSave({
       ...form,
-      id: editData?.id || generateId(),
+      id: editData?.id || undefined,
       type: 'provider',
       createdAt: editData?.createdAt || new Date().toISOString(),
     });
@@ -352,7 +354,7 @@ const UtilityModal = ({ isOpen, onClose, onSave, editData }) => {
     if (!form.provider.trim()) { toast.error('Provider name is required'); return; }
     onSave({
       ...form,
-      id: editData?.id || generateId(),
+      id: editData?.id || undefined,
       type: 'utility',
     });
   };
@@ -673,7 +675,7 @@ const AddJobModal = ({ isOpen, onClose, onSave }) => {
         </div>
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600">Cancel</button>
-          <button onClick={() => { if (!form.description.trim()) { toast.error('Description required'); return; } onSave({ ...form, id: generateId() }); }}
+          <button onClick={() => { if (!form.description.trim()) { toast.error('Description required'); return; } onSave({ ...form, id: crypto.randomUUID() }); }}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors">Add Job</button>
         </div>
       </motion.div>
@@ -683,8 +685,9 @@ const AddJobModal = ({ isOpen, onClose, onSave }) => {
 
 // ─── Main Page ────────────────────────────────────────────────────────
 export default function ContactsAccounts() {
-  const [contacts, setContacts] = useState([]);
-  const [utilities, setUtilities] = useState([]);
+  const { activeProperty, homeData, refreshProperties } = useProperty();
+  const { user } = useAuth();
+
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showProviderModal, setShowProviderModal] = useState(false);
@@ -695,54 +698,138 @@ export default function ContactsAccounts() {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [jobModalProvider, setJobModalProvider] = useState(null);
 
-  // Load data
-  useEffect(() => {
-    const data = getHomeData();
-    setContacts(data.contacts || []);
-    setUtilities(data.utilities || []);
-  }, []);
+  // ── Helpers to convert between Supabase and UI shapes ──
 
-  // Save helpers
-  const saveContacts = (updated) => {
-    setContacts(updated);
-    const data = getHomeData();
-    data.contacts = updated;
-    saveHomeData(data);
+  const parseContactNotes = (notesStr) => {
+    try { return JSON.parse(notesStr); } catch { return { text: notesStr || '' }; }
   };
 
-  const saveUtilities = (updated) => {
-    setUtilities(updated);
-    const data = getHomeData();
-    data.utilities = updated;
-    saveHomeData(data);
+  const parseUtilityNotes = (notesStr) => {
+    try { return JSON.parse(notesStr); } catch { return { text: notesStr || '' }; }
   };
 
-  const handleSaveProvider = (provider) => {
-    const exists = contacts.find(c => c.id === provider.id);
-    const updated = exists ? contacts.map(c => c.id === provider.id ? provider : c) : [...contacts, provider];
-    saveContacts(updated);
-    setShowProviderModal(false);
-    setEditingProvider(null);
-    toast.success(exists ? 'Provider updated' : 'Provider added');
+  const dbContactToDisplay = (c) => {
+    const nd = parseContactNotes(c.notes);
+    return {
+      ...c,
+      trade: c.role,
+      isFavorite: c.is_favorite,
+      isEmergency: nd.isEmergency || false,
+      jobs: nd.jobs || [],
+      notes: nd.text,
+      createdAt: nd.createdAt || c.created_at,
+      lastContactedAt: nd.lastContactedAt,
+      type: 'provider',
+    };
   };
 
-  const handleSaveUtility = (utility) => {
-    const exists = utilities.find(u => u.id === utility.id);
-    const updated = exists ? utilities.map(u => u.id === utility.id ? utility : u) : [...utilities, utility];
-    saveUtilities(updated);
-    setShowUtilityModal(false);
-    setEditingUtility(null);
-    toast.success(exists ? 'Account updated' : 'Account added');
+  const dbUtilityToDisplay = (u) => {
+    const nd = parseUtilityNotes(u.notes);
+    return {
+      ...u,
+      utilityType: u.type,
+      accountNumber: u.account_number,
+      loginEmail: u.login_email,
+      avgMonthlyCost: nd.avgMonthlyCost || '',
+      autopay: nd.autopay || false,
+      billingCycle: nd.billingCycle || '',
+      contractEndDate: nd.contractEndDate || '',
+      paymentMethod: nd.paymentMethod || '',
+      isActive: nd.isActive !== undefined ? nd.isActive : true,
+      notes: nd.text,
+      type: 'utility',
+    };
   };
 
-  const handleDelete = (id) => {
-    const inContacts = contacts.find(c => c.id === id);
-    if (inContacts) {
-      saveContacts(contacts.filter(c => c.id !== id));
-      toast.success('Provider removed');
-    } else {
-      saveUtilities(utilities.filter(u => u.id !== id));
-      toast.success('Account removed');
+  // Derive contacts and utilities from homeData
+  const contacts = (homeData?.contacts || []).map(dbContactToDisplay);
+  const utilities = (homeData?.utilities || []).map(dbUtilityToDisplay);
+
+  // ── Save / Delete handlers ──
+
+  const handleSaveProvider = async (provider) => {
+    try {
+      const isEdit = !!provider.id;
+      const notesData = {
+        text: provider.notes || '',
+        isEmergency: provider.isEmergency || false,
+        jobs: provider.jobs || [],
+        createdAt: provider.createdAt || new Date().toISOString(),
+        lastContactedAt: provider.lastContactedAt,
+      };
+      const dbContact = {
+        ...(provider.id ? { id: provider.id } : {}),
+        property_id: activeProperty.id,
+        name: provider.name,
+        company: provider.company || '',
+        role: provider.trade,
+        phone: provider.phone || '',
+        email: provider.email || '',
+        address: provider.address || '',
+        notes: JSON.stringify(notesData),
+        rating: provider.rating || 0,
+        is_favorite: provider.isFavorite || false,
+      };
+      await upsertContact(dbContact);
+      await refreshProperties();
+      setShowProviderModal(false);
+      setEditingProvider(null);
+      toast.success(isEdit ? 'Provider updated' : 'Provider added');
+    } catch (err) {
+      console.error('Failed to save provider:', err);
+      toast.error('Failed to save provider');
+    }
+  };
+
+  const handleSaveUtility = async (utility) => {
+    try {
+      const isEdit = !!utility.id;
+      const notesData = {
+        text: utility.notes || '',
+        avgMonthlyCost: utility.avgMonthlyCost || '',
+        autopay: utility.autopay || false,
+        billingCycle: utility.billingCycle || '',
+        contractEndDate: utility.contractEndDate || '',
+        paymentMethod: utility.paymentMethod || '',
+        isActive: utility.isActive !== undefined ? utility.isActive : true,
+      };
+      const dbUtility = {
+        ...(utility.id ? { id: utility.id } : {}),
+        property_id: activeProperty.id,
+        type: utility.utilityType,
+        provider: utility.provider,
+        account_number: utility.accountNumber || '',
+        phone: utility.phone || '',
+        website: utility.website || '',
+        login_email: utility.loginEmail || '',
+        notes: JSON.stringify(notesData),
+      };
+      await upsertUtility(dbUtility);
+      await refreshProperties();
+      setShowUtilityModal(false);
+      setEditingUtility(null);
+      toast.success(isEdit ? 'Account updated' : 'Account added');
+    } catch (err) {
+      console.error('Failed to save utility:', err);
+      toast.error('Failed to save utility');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const inContacts = contacts.find(c => c.id === id);
+      if (inContacts) {
+        await deleteContact(id);
+        await refreshProperties();
+        toast.success('Provider removed');
+      } else {
+        await deleteUtility(id);
+        await refreshProperties();
+        toast.success('Account removed');
+      }
+    } catch (err) {
+      console.error('Failed to delete:', err);
+      toast.error('Failed to delete');
     }
   };
 
@@ -761,19 +848,46 @@ export default function ContactsAccounts() {
     setJobModalProvider(provider);
   };
 
-  const handleSaveJob = (job) => {
-    const updated = contacts.map(c => {
-      if (c.id === jobModalProvider.id) {
-        return { ...c, jobs: [...(c.jobs || []), job], lastContactedAt: new Date().toISOString() };
-      }
-      return c;
-    });
-    saveContacts(updated);
-    setJobModalProvider(null);
-    // Update detail panel
-    const updatedItem = updated.find(c => c.id === jobModalProvider.id);
-    if (selectedItem?.id === jobModalProvider.id) setSelectedItem(updatedItem);
-    toast.success('Job recorded');
+  const handleSaveJob = async (job) => {
+    try {
+      // Find the raw supabase record to get existing notes data
+      const rawContact = (homeData?.contacts || []).find(c => c.id === jobModalProvider.id);
+      if (!rawContact) return;
+
+      const nd = parseContactNotes(rawContact.notes);
+      const updatedJobs = [...(nd.jobs || []), job];
+      const now = new Date().toISOString();
+      const notesData = {
+        ...nd,
+        jobs: updatedJobs,
+        lastContactedAt: now,
+      };
+      const dbContact = {
+        id: rawContact.id,
+        property_id: rawContact.property_id,
+        name: rawContact.name,
+        company: rawContact.company,
+        role: rawContact.role,
+        phone: rawContact.phone,
+        email: rawContact.email,
+        address: rawContact.address,
+        notes: JSON.stringify(notesData),
+        rating: rawContact.rating,
+        is_favorite: rawContact.is_favorite,
+      };
+      await upsertContact(dbContact);
+      await refreshProperties();
+      const providerId = jobModalProvider.id;
+      setJobModalProvider(null);
+      // Update detail panel after refresh
+      const refreshedContacts = (homeData?.contacts || []).map(dbContactToDisplay);
+      const updatedItem = refreshedContacts.find(c => c.id === providerId);
+      if (selectedItem?.id === providerId && updatedItem) setSelectedItem(updatedItem);
+      toast.success('Job recorded');
+    } catch (err) {
+      console.error('Failed to save job:', err);
+      toast.error('Failed to save job');
+    }
   };
 
   // Filter
