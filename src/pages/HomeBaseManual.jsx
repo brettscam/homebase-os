@@ -22,6 +22,7 @@ import {
   ExternalLink,
   X,
   ChevronRight,
+  ChevronDown,
   Activity,
   Gauge,
   Wind,
@@ -113,6 +114,7 @@ export default function HomeBaseManual() {
   const [darkMode, setDarkMode] = useState(false);
   const [showAddInfoModal, setShowAddInfoModal] = useState(false);
   const [selectedSection, setSelectedSection] = useState(null);
+  const [navOpen, setNavOpen] = useState(false);
 
   // Build real data references
   const property = activeProperty || {};
@@ -145,20 +147,48 @@ export default function HomeBaseManual() {
   const totalItems = Object.values(completionData).reduce((sum, item) => sum + item.total, 0);
   const overallCompletion = totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) : 0;
 
-  const chapters = [
-    { id: 'model3d', label: '3D Floor Plan', icon: Box },
-    { id: 'vitals', label: 'System Vitals', icon: Activity },
-    { id: 'property', label: 'Property', icon: Home },
-    { id: 'spaces', label: 'Rooms & Spaces', icon: Layout },
-    { id: 'aesthetics', label: 'Paint & Finishes', icon: Palette },
-    { id: 'appliances', label: 'Appliances', icon: Settings },
-    { id: 'mechanical', label: 'Mechanical', icon: Wrench },
-    { id: 'landscape', label: 'Landscape', icon: Trees },
-    { id: 'exterior', label: 'Exterior', icon: Building2 },
-    { id: 'systems', label: 'Smart Systems', icon: Zap },
-    { id: 'documents', label: 'Documents', icon: Info },
-    { id: 'emergency', label: 'Emergency', icon: AlertTriangle },
+  const chapterGroups = [
+    {
+      label: 'Overview',
+      chapters: [
+        { id: 'model3d', label: '3D Floor Plan', icon: Box },
+        { id: 'vitals', label: 'System Vitals', icon: Activity },
+        { id: 'property', label: 'Property Info', icon: Home },
+      ],
+    },
+    {
+      label: 'Interior',
+      chapters: [
+        { id: 'spaces', label: 'Rooms & Spaces', icon: Layout },
+        { id: 'aesthetics', label: 'Paint & Finishes', icon: Palette },
+        { id: 'appliances', label: 'Appliances', icon: Settings },
+      ],
+    },
+    {
+      label: 'Systems',
+      chapters: [
+        { id: 'mechanical', label: 'Mechanical', icon: Wrench },
+        { id: 'systems', label: 'Smart Home', icon: Zap },
+      ],
+    },
+    {
+      label: 'Outdoor',
+      chapters: [
+        { id: 'exterior', label: 'Exterior', icon: Building2 },
+        { id: 'landscape', label: 'Landscape', icon: Trees },
+      ],
+    },
+    {
+      label: 'Records',
+      chapters: [
+        { id: 'documents', label: 'Documents', icon: Info },
+        { id: 'emergency', label: 'Emergency', icon: AlertTriangle },
+      ],
+    },
   ];
+
+  const chapters = chapterGroups.flatMap(g => g.chapters);
+  const currentChapter = chapters.find(c => c.id === activeChapter) || chapters[0];
 
   // Handle chapter navigation
   const scrollToChapter = (chapterId) => {
@@ -230,15 +260,15 @@ export default function HomeBaseManual() {
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}>
-      {/* Chapter Navigation Strip */}
-      <div className={`sticky top-[3.5rem] z-30 ${darkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-gray-100'} backdrop-blur-xl border-b`}>
-        <div className="flex items-center gap-2 px-4 py-2">
+      {/* Chapter Navigation — dropdown "Jump to section" */}
+      <div className={`sticky top-[6.5rem] z-30 ${darkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-gray-100'} backdrop-blur-xl border-b`}>
+        <div className="flex items-center gap-2 px-4 py-2 max-w-5xl mx-auto">
           {/* Completion Badge */}
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg mr-2 ${darkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
-            <div className="w-6 h-6 relative">
+          <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-gray-50'}`}>
+            <div className="w-5 h-5 relative">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" fill="none" stroke={darkMode ? '#334155' : '#e5e7eb'} strokeWidth="2" />
-                <circle cx="12" cy="12" r="10" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round"
+                <circle cx="12" cy="12" r="10" fill="none" stroke={darkMode ? '#334155' : '#e5e7eb'} strokeWidth="3" />
+                <circle cx="12" cy="12" r="10" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round"
                   strokeDasharray={`${overallCompletion * 0.628} 62.8`}
                 />
               </svg>
@@ -246,26 +276,72 @@ export default function HomeBaseManual() {
             <span className={`text-xs font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{overallCompletion}%</span>
           </div>
 
-          {/* Scrollable Chapter Tabs */}
-          <div className="flex-1 flex items-center gap-1 overflow-x-auto scrollbar-hide">
-            {chapters.map((chapter) => (
-              <button
-                key={chapter.id}
-                onClick={() => scrollToChapter(chapter.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
-                  activeChapter === chapter.id
-                    ? darkMode
-                      ? 'bg-slate-700 text-white'
-                      : 'bg-blue-50 text-blue-600'
-                    : darkMode
-                    ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                }`}
-              >
-                <chapter.icon className="w-3.5 h-3.5" strokeWidth={1.5} />
-                <span>{chapter.label}</span>
-              </button>
-            ))}
+          {/* Jump-to dropdown */}
+          <div className="flex-1 relative">
+            <button
+              onClick={() => setNavOpen(o => !o)}
+              className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                darkMode ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-gray-50 text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <currentChapter.icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
+                <span className="truncate">{currentChapter.label}</span>
+              </span>
+              <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${navOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {navOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setNavOpen(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className={`absolute top-full left-0 right-0 mt-1 rounded-xl shadow-xl border z-50 overflow-hidden ${
+                      darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
+                    }`}
+                  >
+                    <div className="max-h-[60vh] overflow-y-auto py-2">
+                      {chapterGroups.map((group) => (
+                        <div key={group.label} className="mb-1 last:mb-0">
+                          <p className={`px-4 py-1.5 text-[10px] font-semibold tracking-widest uppercase ${
+                            darkMode ? 'text-slate-500' : 'text-gray-400'
+                          }`}>
+                            {group.label}
+                          </p>
+                          {group.chapters.map((chapter) => (
+                            <button
+                              key={chapter.id}
+                              onClick={() => {
+                                scrollToChapter(chapter.id);
+                                setNavOpen(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors text-left ${
+                                activeChapter === chapter.id
+                                  ? darkMode
+                                    ? 'bg-slate-700 text-white'
+                                    : 'bg-blue-50 text-blue-700'
+                                  : darkMode
+                                  ? 'text-slate-300 hover:bg-slate-700'
+                                  : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <chapter.icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
+                              <span>{chapter.label}</span>
+                              {activeChapter === chapter.id && (
+                                <Check className="w-4 h-4 ml-auto text-blue-600" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Add Info Button */}
@@ -274,9 +350,9 @@ export default function HomeBaseManual() {
               setSelectedSection(activeChapter);
               setShowAddInfoModal(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-xs font-medium ml-2"
+            className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium flex-shrink-0"
           >
-            <Info className="w-3.5 h-3.5" />
+            <Info className="w-4 h-4" />
             <span className="hidden sm:inline">Add Info</span>
           </button>
         </div>
@@ -436,7 +512,7 @@ export default function HomeBaseManual() {
                         contacts.slice(0, 3).map(c => (
                           <div key={c.id} className="flex items-center justify-between text-sm">
                             <span className="text-gray-600">{c.name}</span>
-                            <span className="font-medium text-gray-900">{c.trade || c.company || ''}</span>
+                            <span className="font-medium text-gray-900">{c.role || c.trade || c.company || ''}</span>
                           </div>
                         ))
                       )}
@@ -669,9 +745,9 @@ export default function HomeBaseManual() {
                           </div>
                           <div className="flex-1">
                             <h3 className="text-lg font-semibold text-gray-900 mb-1">Electrical Panel</h3>
-                            <p className="text-gray-600 mb-2">{legacySystems.electrical.location || 'Location not set'}</p>
+                            <p className="text-gray-600 mb-2">{legacySystems.electrical.panelLocation || legacySystems.electrical.location || 'Location not set'}</p>
                             <p className="text-sm text-gray-500">
-                              {[legacySystems.electrical.amperage && `${legacySystems.electrical.amperage}A`, legacySystems.electrical.panel_type].filter(Boolean).join(' · ') || 'No details'}
+                              {[legacySystems.electrical.amperage && `${legacySystems.electrical.amperage}A`, legacySystems.electrical.circuits && `${legacySystems.electrical.circuits} circuits`].filter(Boolean).join(' · ') || 'No details'}
                             </p>
                           </div>
                         </div>
@@ -693,16 +769,16 @@ export default function HomeBaseManual() {
                                 {[legacySystems.waterHeater.brand, legacySystems.waterHeater.model, legacySystems.waterHeater.capacity].filter(Boolean).join(' · ') || 'No details'}
                               </p>
                               <div className="grid grid-cols-2 gap-4 text-sm">
-                                {legacySystems.waterHeater.install_year && (
+                                {(legacySystems.waterHeater.installDate || legacySystems.waterHeater.install_year) && (
                                   <div>
                                     <p className="text-gray-500">Installed</p>
-                                    <p className="font-medium text-gray-900">{legacySystems.waterHeater.install_year}</p>
+                                    <p className="font-medium text-gray-900">{legacySystems.waterHeater.installDate || legacySystems.waterHeater.install_year}</p>
                                   </div>
                                 )}
-                                {legacySystems.waterHeater.serial_number && (
+                                {(legacySystems.waterHeater.serialNumber || legacySystems.waterHeater.serial_number) && (
                                   <div>
                                     <p className="text-gray-500">Serial Number</p>
-                                    <p className="font-mono text-gray-900">{legacySystems.waterHeater.serial_number}</p>
+                                    <p className="font-mono text-gray-900">{legacySystems.waterHeater.serialNumber || legacySystems.waterHeater.serial_number}</p>
                                   </div>
                                 )}
                               </div>
@@ -744,16 +820,16 @@ export default function HomeBaseManual() {
                                 {[legacySystems.hvac.brand, legacySystems.hvac.model, legacySystems.hvac.type].filter(Boolean).join(' · ') || 'No details'}
                               </p>
                               <div className="grid grid-cols-2 gap-4 text-sm">
-                                {legacySystems.hvac.install_year && (
+                                {(legacySystems.hvac.installDate || legacySystems.hvac.install_year) && (
                                   <div>
                                     <p className="text-gray-500">Installed</p>
-                                    <p className="font-medium text-gray-900">{legacySystems.hvac.install_year}</p>
+                                    <p className="font-medium text-gray-900">{legacySystems.hvac.installDate || legacySystems.hvac.install_year}</p>
                                   </div>
                                 )}
-                                {legacySystems.hvac.last_service && (
+                                {(legacySystems.hvac.lastService || legacySystems.hvac.last_service) && (
                                   <div>
                                     <p className="text-gray-500">Last Service</p>
-                                    <p className="font-medium text-gray-900">{legacySystems.hvac.last_service}</p>
+                                    <p className="font-medium text-gray-900">{legacySystems.hvac.lastService || legacySystems.hvac.last_service}</p>
                                   </div>
                                 )}
                               </div>
@@ -1014,9 +1090,9 @@ export default function HomeBaseManual() {
                           </div>
                           <div className="flex-1">
                             <h3 className="text-lg font-semibold text-white mb-1">Electrical Panel</h3>
-                            <p className="text-slate-300 mb-2">{legacySystems.electrical.location || 'Location not set'}</p>
+                            <p className="text-slate-300 mb-2">{legacySystems.electrical.panelLocation || legacySystems.electrical.location || 'Location not set'}</p>
                             <p className="text-sm text-slate-400">
-                              {[legacySystems.electrical.amperage && `${legacySystems.electrical.amperage}A`, legacySystems.electrical.panel_type].filter(Boolean).join(' · ') || 'No details'}
+                              {[legacySystems.electrical.amperage && `${legacySystems.electrical.amperage}A`, legacySystems.electrical.circuits && `${legacySystems.electrical.circuits} circuits`].filter(Boolean).join(' · ') || 'No details'}
                             </p>
                           </div>
                         </div>
@@ -1032,9 +1108,10 @@ export default function HomeBaseManual() {
                     Emergency Service Providers
                   </h3>
                   {(() => {
-                    const emergencyContacts = contacts.filter(c =>
-                      c.trade && ['plumber', 'plumbing', 'electrician', 'electrical', 'hvac', 'heating', 'cooling'].some(t => c.trade.toLowerCase().includes(t))
-                    );
+                    const emergencyContacts = contacts.filter(c => {
+                      const role = c.role || c.trade || '';
+                      return role && ['plumber', 'plumbing', 'electrician', 'electrical', 'hvac', 'heating', 'cooling'].some(t => role.toLowerCase().includes(t));
+                    });
                     return emergencyContacts.length === 0 ? (
                       <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 text-center">
                         <p className="text-slate-400 text-sm">No emergency service contacts saved yet. Add plumber, electrician, or HVAC contacts on the Contacts page.</p>
@@ -1048,7 +1125,7 @@ export default function HomeBaseManual() {
                             className="flex items-center justify-between bg-slate-800 rounded-2xl p-4 border border-slate-700 hover:bg-slate-700 transition-colors"
                           >
                             <div>
-                              <p className="font-medium text-white">{contact.trade || 'Service Provider'}</p>
+                              <p className="font-medium text-white">{contact.role || contact.trade || 'Service Provider'}</p>
                               <p className="text-sm text-slate-400">{contact.name || contact.company || ''}</p>
                             </div>
                             {contact.phone && (
