@@ -1,39 +1,33 @@
-**Welcome to your Base44 project** 
+# HomeBase OS
 
-**About**
+Personal home operating system — track property details, systems, appliances, paint records, projects, and more. AI-powered document ingestion (appraisals, inspections, disclosures) auto-populates your home profile.
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+## Stack
 
-This project contains everything you need to run your app locally.
+- **Frontend:** React + Vite, auto-deployed on Vercel
+- **Backend:** Supabase (Postgres, Auth, Edge Functions, Storage)
+- **AI:** Claude (via Supabase Edge Function) for document extraction
 
-**Edit the code in your local development environment**
+## Local Dev
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
-
-**Prerequisites:** 
-
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
-
-```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
-
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+```bash
+npm install
+cp .env.example .env.local  # fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+npm run dev
 ```
 
-Run the app: `npm run dev`
+## Deployment
 
-**Publish your changes**
+Everything auto-deploys from `main`:
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+- **Frontend → Vercel**: auto-deploys on push to main. Env vars required on the Vercel project: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+- **Edge Functions → Supabase**: auto-deploys on push to main via `.github/workflows/deploy-supabase-functions.yml` whenever anything under `supabase/functions/**` changes.
 
-**Docs & Support**
+### One-time setup
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+**GitHub Actions secret** (for edge function deploys):
+- `SUPABASE_ACCESS_TOKEN` — a Supabase PAT from https://supabase.com/dashboard/account/tokens
+  Add it at: GitHub repo → Settings → Secrets and variables → Actions → New repository secret
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+**Supabase secret** (read by the edge function at runtime):
+- `ANTHROPIC_API_KEY` — already set on the project.

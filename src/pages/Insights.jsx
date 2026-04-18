@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useProperty } from '@/lib/PropertyContext';
-import { getHomeData } from '@/lib/homeDataStore';
 import { systemsArrayToLegacy } from '@/lib/supabaseDataStore';
 import {
   TrendingUp, TrendingDown, DollarSign, Zap, Droplets, Flame,
