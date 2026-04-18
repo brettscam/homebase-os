@@ -173,8 +173,14 @@ Return ONLY a JSON array with this shape, no markdown:
         },
       });
 
-      if (fnError) throw new Error(fnError.message || 'Suggestion service failed');
-      if (data?.error) throw new Error(data.error);
+      const humanize = (raw) => {
+        const m = raw?.message || String(raw || '');
+        if (/Function not found|does not exist|404/i.test(m)) return 'Homer is not deployed yet — ask admin to deploy chat-with-homer edge function.';
+        if (/ANTHROPIC_API_KEY/i.test(m)) return 'AI brain not configured — admin needs to set ANTHROPIC_API_KEY.';
+        return m || 'Suggestion service failed';
+      };
+      if (fnError) throw new Error(humanize(fnError));
+      if (data?.error) throw new Error(humanize({ message: data.error }));
 
       const parsed = JSON.parse(
         (data?.message || '[]').replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
@@ -182,7 +188,7 @@ Return ONLY a JSON array with this shape, no markdown:
       setSuggestions(Array.isArray(parsed) ? parsed : []);
     } catch (err) {
       console.error('AI suggestions failed:', err);
-      toast.error('Could not generate suggestions right now.');
+      toast.error(err?.message || 'Could not generate suggestions right now.');
     } finally {
       setLoading(false);
     }
@@ -800,7 +806,7 @@ const ImportFromHomeData = ({ onImport, existingComponents, homeData }) => {
           subtype: appData.type?.toLowerCase().replace(/\s/g, '_') || '',
           brand: appData.brand || '',
           model: appData.model || '',
-          installYear: appData.installDate?.slice(0, 4) || '',
+          installYear: (appData.install_date || appData.installDate)?.slice(0, 4) || '',
           lifespanYears: COMPONENT_CATEGORIES.find(c => c.id === 'appliance')
             ?.lifespanYears[appData.type?.toLowerCase().replace(/\s/g, '_')] || 12,
           location: appData.room || '',
