@@ -1,39 +1,41 @@
-**Welcome to your Base44 project** 
+# HomeBase OS
 
-**About**
+Personal home operating system — track property details, systems, appliances, paint records, projects, and more. AI-powered document ingestion (appraisals, inspections, disclosures) auto-populates your home profile.
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+## Stack
 
-This project contains everything you need to run your app locally.
+- **Frontend:** React + Vite, deployed on Vercel
+- **Backend:** Supabase (Postgres, Auth, Edge Functions, Storage)
+- **AI:** Claude (via Supabase Edge Function) for document extraction
 
-**Edit the code in your local development environment**
+## Local Dev
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
-
-**Prerequisites:** 
-
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
-
-```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
-
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+```bash
+npm install
+cp .env.example .env.local  # fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+npm run dev
 ```
 
-Run the app: `npm run dev`
+## Deploy
 
-**Publish your changes**
+### Frontend (Vercel)
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+Push to the main branch. Vercel auto-deploys.
 
-**Docs & Support**
+Required env vars on Vercel project:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+### Edge Function (Supabase)
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+Deploys the `process-document` function used by onboarding to extract
+property data from uploaded documents.
+
+```bash
+./scripts/deploy-edge-function.sh
+```
+
+Requires `ANTHROPIC_API_KEY` as a Supabase secret:
+```bash
+npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref jhmhgyijwhimshxgupon
+```
