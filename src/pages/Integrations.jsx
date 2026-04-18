@@ -205,47 +205,6 @@ const BillHistory = ({ bills, onDelete }) => {
   );
 };
 
-// ─── Connected Services ─────────────────────────────────────
-const ConnectedServices = () => {
-  const integrations = [
-    { name: 'Energy Provider', icon: Zap, description: 'Auto-import monthly electric & gas bills', status: 'coming_soon' },
-    { name: 'Smart Thermostat', icon: Thermometer, description: 'Nest, Ecobee, Honeywell — track HVAC runtime', status: 'coming_soon' },
-    { name: 'Smart Home', icon: Wifi, description: 'Ring, SimpliSafe, SmartThings — device inventory', status: 'coming_soon' },
-    { name: 'Water Utility', icon: Droplets, description: 'Auto-import water usage and billing', status: 'coming_soon' },
-  ];
-
-  return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
-          <Link2 className="w-5 h-5 text-indigo-600" />
-        </div>
-        <div>
-          <h3 className="font-semibold text-gray-900">Connected Services</h3>
-          <p className="text-xs text-gray-500">Auto-sync data from your providers</p>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        {integrations.map((int, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-            <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center border border-gray-200">
-              <int.icon className="w-4 h-4 text-gray-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900">{int.name}</p>
-              <p className="text-xs text-gray-500">{int.description}</p>
-            </div>
-            <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-full uppercase tracking-wide">
-              Coming Soon
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 // ─── Main Integrations Page ─────────────────────────────────
 export default function Integrations() {
   const { activeProperty, homeData: supaData, isLoading, refreshProperties } = useProperty();
@@ -327,27 +286,7 @@ export default function Integrations() {
           )}
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <BillHistory bills={bills} onDelete={handleDeleteBill} />
-          <ConnectedServices />
-        </div>
-
-        {/* Upload Section */}
-        <div className="mt-6">
-          <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center">
-            <Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <h3 className="font-medium text-gray-700 mb-1">Upload Bill PDF or Photo</h3>
-            <p className="text-sm text-gray-400 mb-4">
-              We'll extract the data automatically (coming soon)
-            </p>
-            <button
-              disabled
-              className="px-5 py-2.5 bg-gray-100 text-gray-400 rounded-xl text-sm font-medium cursor-not-allowed"
-            >
-              Upload Coming Soon
-            </button>
-          </div>
-        </div>
+        <BillHistory bills={bills} onDelete={handleDeleteBill} />
       </div>
     </div>
   );

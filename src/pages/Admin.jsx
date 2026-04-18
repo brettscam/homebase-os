@@ -240,7 +240,6 @@ export default function Admin() {
 
   const tabs = [
     { id: 'properties', label: 'Properties', icon: Building2 },
-    { id: 'people', label: 'People', icon: Users },
     { id: 'data', label: 'Data', icon: FileText },
   ];
 
@@ -299,46 +298,6 @@ export default function Admin() {
           </div>
         )}
 
-        {/* People Tab */}
-        {activeTab === 'people' && (
-          <div>
-            <div className="text-center py-16">
-              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-gray-400" />
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">People & Access</h2>
-              <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
-                Invite others to view your home data. Share with tenants, property managers, or contractors.
-              </p>
-              <button
-                disabled
-                className="flex items-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-400 rounded-xl text-sm font-medium mx-auto cursor-not-allowed"
-              >
-                <Plus className="w-4 h-4" /> Invite People
-                <span className="px-2 py-0.5 bg-gray-300 text-gray-500 text-[10px] font-medium rounded-md ml-1">Coming Soon</span>
-              </button>
-
-              {/* Placeholder role explanations */}
-              <div className="mt-10 grid grid-cols-2 gap-4 max-w-lg mx-auto text-left">
-                {[
-                  { role: 'Owner', desc: 'Full access to everything', icon: Shield, color: 'text-blue-600 bg-blue-50' },
-                  { role: 'Manager', desc: 'Full access except billing', icon: Settings, color: 'text-purple-600 bg-purple-50' },
-                  { role: 'Tenant', desc: 'Read-only key info', icon: Home, color: 'text-green-600 bg-green-50' },
-                  { role: 'Contractor', desc: 'Temporary section access', icon: Wrench, color: 'text-orange-600 bg-orange-50' },
-                ].map((r) => (
-                  <div key={r.role} className="bg-white rounded-xl p-4 border border-gray-100">
-                    <div className={`w-8 h-8 rounded-lg ${r.color} flex items-center justify-center mb-2`}>
-                      <r.icon className="w-4 h-4" />
-                    </div>
-                    <p className="text-sm font-medium text-gray-900">{r.role}</p>
-                    <p className="text-xs text-gray-500">{r.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Data Tab */}
         {activeTab === 'data' && (
           <div className="space-y-4">
@@ -371,18 +330,6 @@ export default function Admin() {
               </div>
               <ChevronRight className="w-5 h-5 text-gray-300" />
             </Link>
-
-            {/* Transfer */}
-            <div className="w-full flex items-center gap-4 bg-white rounded-2xl p-5 border border-gray-100 opacity-60">
-              <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <ArrowRight className="w-6 h-6 text-emerald-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 text-sm">Transfer to New Owner</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Generate a transfer package when selling your property.</p>
-              </div>
-              <span className="px-2 py-0.5 bg-gray-100 text-gray-400 text-[10px] font-medium rounded-md">Coming Soon</span>
-            </div>
 
             {/* Clear Data */}
             <div className="pt-8 border-t border-gray-200">
