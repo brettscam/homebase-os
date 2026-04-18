@@ -267,8 +267,15 @@ export default function AskAI() {
         body: { systemPrompt: homeContext, messages: recentMessages },
       });
 
-      if (fnError) throw new Error(fnError.message || 'Chat function failed');
-      if (data?.error) throw new Error(data.error);
+      const humanize = (raw) => {
+        const m = raw?.message || String(raw || '');
+        if (/Function not found|does not exist|404/i.test(m)) return "I'm not deployed yet. Ask the admin to run the chat-with-homer edge function deploy.";
+        if (/ANTHROPIC_API_KEY/i.test(m)) return "My AI brain isn't configured. The admin needs to set ANTHROPIC_API_KEY in Supabase.";
+        if (/AI service error/i.test(m)) return 'The AI service is temporarily unavailable. Try again in a moment.';
+        return m || 'Something went wrong. Please try again.';
+      };
+      if (fnError) throw new Error(humanize(fnError));
+      if (data?.error) throw new Error(humanize({ message: data.error }));
 
       const response = data?.message || 'Sorry, I did not get a response. Try again.';
       const assistantMessage = { role: 'assistant', content: response, timestamp: new Date().toISOString() };
@@ -292,7 +299,7 @@ export default function AskAI() {
       ));
     } catch (err) {
       console.error('Failed to send message:', err);
-      const errorMessage = { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.', timestamp: new Date().toISOString() };
+      const errorMessage = { role: 'assistant', content: err?.message || 'Sorry, I encountered an error. Please try again.', timestamp: new Date().toISOString() };
       const updatedMessages = [...newMessages, errorMessage];
       setMessages(updatedMessages);
       try {

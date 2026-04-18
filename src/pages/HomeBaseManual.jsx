@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
@@ -113,7 +113,6 @@ export default function HomeBaseManual() {
   const [darkMode, setDarkMode] = useState(false);
   const [showAddInfoModal, setShowAddInfoModal] = useState(false);
   const [selectedSection, setSelectedSection] = useState(null);
-  const contentRef = useRef(null);
 
   // Build real data references
   const property = activeProperty || {};
@@ -147,15 +146,16 @@ export default function HomeBaseManual() {
   const overallCompletion = totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) : 0;
 
   const chapters = [
-    { id: 'vitals', label: 'Property Overview', icon: Activity },
     { id: 'model3d', label: '3D Floor Plan', icon: Box },
+    { id: 'vitals', label: 'System Vitals', icon: Activity },
+    { id: 'property', label: 'Property', icon: Home },
     { id: 'spaces', label: 'Rooms & Spaces', icon: Layout },
+    { id: 'aesthetics', label: 'Paint & Finishes', icon: Palette },
     { id: 'appliances', label: 'Appliances', icon: Settings },
     { id: 'mechanical', label: 'Mechanical', icon: Wrench },
-    { id: 'systems', label: 'Smart Systems', icon: Zap },
-    { id: 'aesthetics', label: 'Paint & Finishes', icon: Palette },
-    { id: 'exterior', label: 'Exterior', icon: Building2 },
     { id: 'landscape', label: 'Landscape', icon: Trees },
+    { id: 'exterior', label: 'Exterior', icon: Building2 },
+    { id: 'systems', label: 'Smart Systems', icon: Zap },
     { id: 'documents', label: 'Documents', icon: Info },
     { id: 'emergency', label: 'Emergency', icon: AlertTriangle },
   ];
@@ -164,9 +164,9 @@ export default function HomeBaseManual() {
   const scrollToChapter = (chapterId) => {
     const element = document.getElementById(`chapter-${chapterId}`);
     if (element) {
-      const offset = 100;
-      const elementPosition = element.offsetTop - offset;
-      contentRef.current?.scrollTo({
+      const offset = 120;
+      const elementPosition = element.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({
         top: elementPosition,
         behavior: 'smooth',
       });
@@ -178,21 +178,23 @@ export default function HomeBaseManual() {
   // Handle scroll spy
   useEffect(() => {
     const handleScroll = () => {
-      if (!contentRef.current) return;
+      const scrollPosition = window.scrollY + 200;
+      let current = chapters[0]?.id;
 
-      const scrollPosition = contentRef.current.scrollTop + 200;
-      
       for (const chapter of chapters) {
         const element = document.getElementById(`chapter-${chapter.id}`);
-        if (element && element.offsetTop <= scrollPosition) {
-          setActiveChapter(chapter.id);
+        if (element) {
+          const offsetTop = element.getBoundingClientRect().top + window.scrollY;
+          if (offsetTop <= scrollPosition) {
+            current = chapter.id;
+          }
         }
       }
+      setActiveChapter(current);
     };
 
-    const ref = contentRef.current;
-    ref?.addEventListener('scroll', handleScroll);
-    return () => ref?.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Keyboard shortcut for search
@@ -281,10 +283,7 @@ export default function HomeBaseManual() {
       </div>
 
       {/* Scrollable Content */}
-      <main
-        ref={contentRef}
-        className={`${darkMode ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}
-      >
+      <main className={`${darkMode ? 'bg-slate-900' : 'bg-[#F9F9F9]'}`}>
           <div className="max-w-5xl mx-auto px-6 py-12 space-y-20">
             {/* CHAPTER 0: 3D MODEL */}
             <section id="chapter-model3d" className="scroll-mt-24">

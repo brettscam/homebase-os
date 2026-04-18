@@ -52,6 +52,28 @@ function getMediaType(file) {
 
 // ─── AI Document Processing ────────────────────────────────────────────
 
+// Translate raw edge-function errors into clear user-facing messages.
+function humanizeEdgeFunctionError(err, fnName) {
+  const raw = err?.message || String(err || '');
+  if (/Function not found|does not exist|404/i.test(raw)) {
+    return `Homer's AI brain isn't available yet. An admin needs to deploy the '${fnName}' edge function.`;
+  }
+  if (/ANTHROPIC_API_KEY not configured/i.test(raw)) {
+    return `Homer's AI brain isn't configured yet. An admin needs to set the ANTHROPIC_API_KEY secret.`;
+  }
+  if (/Anthropic API error/i.test(raw)) {
+    return 'The AI service is temporarily unavailable. Try again in a moment.';
+  }
+  return raw || 'Something went wrong while analyzing the document.';
+}
+
+async function invokeDocumentFn(payload) {
+  const { data, error } = await supabase.functions.invoke('process-document', { body: payload });
+  if (error) throw new Error(humanizeEdgeFunctionError(error, 'process-document'));
+  if (data?.error) throw new Error(humanizeEdgeFunctionError({ message: data.error }, 'process-document'));
+  return data;
+}
+
 export async function processDocumentFile(file, documentType, existingData = {}) {
   const mediaType = getMediaType(file);
   let payload;
@@ -63,36 +85,11 @@ export async function processDocumentFile(file, documentType, existingData = {})
     const base64 = await readFileAsBase64(file);
     payload = { fileBase64: base64, mediaType, documentType, existingData };
   }
-
-  const { data, error } = await supabase.functions.invoke('process-document', {
-    body: payload,
-  });
-
-  if (error) {
-    throw new Error(error.message || 'Document processing failed');
-  }
-  if (data?.error) {
-    throw new Error(data.error);
-  }
-
-  return data;
+  return invokeDocumentFn(payload);
 }
 
 export async function processDocumentText(text, documentType, existingData = {}) {
-  const payload = { textContent: text, documentType, existingData };
-
-  const { data, error } = await supabase.functions.invoke('process-document', {
-    body: payload,
-  });
-
-  if (error) {
-    throw new Error(error.message || 'Document processing failed');
-  }
-  if (data?.error) {
-    throw new Error(data.error);
-  }
-
-  return data;
+  return invokeDocumentFn({ textContent: text, documentType, existingData });
 }
 
 // ─── Fallback: Basic Pattern Extraction ────────────────────────────────

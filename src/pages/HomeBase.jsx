@@ -397,7 +397,8 @@ const EmergencyView = () => {
         >
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Emergency Contacts</h2>
           {(() => {
-            const ec = (homeData.contacts || []).filter(c => c.isEmergency);
+            const parseNotes = (n) => { try { return JSON.parse(n); } catch { return {}; } };
+            const ec = (homeData.contacts || []).filter(c => parseNotes(c.notes)?.isEmergency);
             if (ec.length > 0) {
               return (
                 <div className="space-y-3">
@@ -409,7 +410,7 @@ const EmergencyView = () => {
                     >
                       <div>
                         <p className="font-medium text-white">{c.name}</p>
-                        <p className="text-sm text-slate-400">{c.trade || c.company || ''}</p>
+                        <p className="text-sm text-slate-400">{c.role || c.company || ''}</p>
                       </div>
                       <p className="text-blue-400 text-sm">{c.phone || 'No phone'}</p>
                     </a>
