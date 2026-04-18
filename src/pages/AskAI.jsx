@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// base44 LLM integration removed — AI chat will use a new backend
 import { useProperty } from '../lib/PropertyContext';
 import { useAuth } from '../lib/AuthContext';
 import { getChatConversations, upsertChatConversation, deleteChatConversation } from '../lib/supabaseDataStore';
+import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import {
   Send,
@@ -258,14 +258,19 @@ export default function AskAI() {
     setIsLoading(true);
 
     try {
-      // Build conversation history for context
-      const historyPrompt = newMessages.slice(-10).map(m =>
-        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
-      ).join('\n\n');
+      // Send last 10 messages to Claude (role + content only)
+      const recentMessages = newMessages.slice(-10).map(m => ({
+        role: m.role, content: m.content,
+      }));
 
-      // AI backend temporarily unavailable during migration
-      const response = 'AI chat is being migrated to a new backend. This feature will be available again soon.';
+      const { data, error: fnError } = await supabase.functions.invoke('chat-with-homer', {
+        body: { systemPrompt: homeContext, messages: recentMessages },
+      });
 
+      if (fnError) throw new Error(fnError.message || 'Chat function failed');
+      if (data?.error) throw new Error(data.error);
+
+      const response = data?.message || 'Sorry, I did not get a response. Try again.';
       const assistantMessage = { role: 'assistant', content: response, timestamp: new Date().toISOString() };
       const updatedMessages = [...newMessages, assistantMessage];
       setMessages(updatedMessages);

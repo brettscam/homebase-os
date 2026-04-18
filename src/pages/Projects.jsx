@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useProperty } from '../lib/PropertyContext';
 import { useAuth } from '../lib/AuthContext';
 import { upsertProject, deleteProject, systemsArrayToLegacy } from '../lib/supabaseDataStore';
+import { supabase } from '../lib/supabase';
 
 // ─── Component Categories & Lifespans ────────────────────────────────
 const COMPONENT_CATEGORIES = [
@@ -150,11 +151,38 @@ const AISuggestionBanner = ({ components, onAddSuggested }) => {
         return `${c.name}: installed ${c.installYear}, ${remaining !== null ? remaining + ' years remaining' : 'unknown age'}, est. cost $${c.estimatedCost || '?'}`;
       }).join('\n');
 
-      // AI suggestions temporarily disabled during backend migration
-      toast.info('AI suggestions coming soon.');
-      setSuggestions([]);
-    } catch {
-      toast.error('Could not generate suggestions');
+      const systemPrompt = `You are a home maintenance planning expert. Given a list of home components with their install dates and remaining lifespans, recommend the 3-5 most important projects to plan for, prioritized by urgency.
+
+Return ONLY a JSON array with this shape, no markdown:
+[
+  {
+    "title": "Project name",
+    "reason": "1-sentence why this matters now",
+    "urgency": "high" | "medium" | "low",
+    "timeframe": "e.g. Next 6 months, This year, 2-3 years",
+    "estimatedCost": "e.g. $3,000-5,000"
+  }
+]`;
+
+      const userMessage = `Home components:\n${componentSummary}\n\nRecommend prioritized projects.`;
+
+      const { data, error: fnError } = await supabase.functions.invoke('chat-with-homer', {
+        body: {
+          systemPrompt,
+          messages: [{ role: 'user', content: userMessage }],
+        },
+      });
+
+      if (fnError) throw new Error(fnError.message || 'Suggestion service failed');
+      if (data?.error) throw new Error(data.error);
+
+      const parsed = JSON.parse(
+        (data?.message || '[]').replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      );
+      setSuggestions(Array.isArray(parsed) ? parsed : []);
+    } catch (err) {
+      console.error('AI suggestions failed:', err);
+      toast.error('Could not generate suggestions right now.');
     } finally {
       setLoading(false);
     }
