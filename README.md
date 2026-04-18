@@ -4,7 +4,7 @@ Personal home operating system — track property details, systems, appliances, 
 
 ## Stack
 
-- **Frontend:** React + Vite, deployed on Vercel
+- **Frontend:** React + Vite, auto-deployed on Vercel
 - **Backend:** Supabase (Postgres, Auth, Edge Functions, Storage)
 - **AI:** Claude (via Supabase Edge Function) for document extraction
 
@@ -16,26 +16,18 @@ cp .env.example .env.local  # fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_K
 npm run dev
 ```
 
-## Deploy
+## Deployment
 
-### Frontend (Vercel)
+Everything auto-deploys from `main`:
 
-Push to the main branch. Vercel auto-deploys.
+- **Frontend → Vercel**: auto-deploys on push to main. Env vars required on the Vercel project: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+- **Edge Functions → Supabase**: auto-deploys on push to main via `.github/workflows/deploy-supabase-functions.yml` whenever anything under `supabase/functions/**` changes.
 
-Required env vars on Vercel project:
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+### One-time setup
 
-### Edge Function (Supabase)
+**GitHub Actions secret** (for edge function deploys):
+- `SUPABASE_ACCESS_TOKEN` — a Supabase PAT from https://supabase.com/dashboard/account/tokens
+  Add it at: GitHub repo → Settings → Secrets and variables → Actions → New repository secret
 
-Deploys the `process-document` function used by onboarding to extract
-property data from uploaded documents.
-
-```bash
-./scripts/deploy-edge-function.sh
-```
-
-Requires `ANTHROPIC_API_KEY` as a Supabase secret:
-```bash
-npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref jhmhgyijwhimshxgupon
-```
+**Supabase secret** (read by the edge function at runtime):
+- `ANTHROPIC_API_KEY` — already set on the project.
