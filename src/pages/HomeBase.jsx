@@ -58,23 +58,44 @@ function useHomeData() {
           serialNumber: a.serial_number, installDate: a.install_date, notes: a.notes,
         })),
         systems: systemsArrayToLegacy(supaData.systems || []),
-        smartHome: {
-          wifi: { networkName: '', password: '' },
-          doorLocks: [],
-          security: { provider: '', panelLocation: '' },
-          garage: { brand: '', code: '' },
-        },
-        emergency: {
-          waterShutoff: { location: '', instructions: '' },
-          gasShutoff: { location: '', instructions: '' },
-          electricalPanel: { location: '', instructions: '' },
-          contacts: [],
-        },
-        exterior: {
-          roof: { type: '', material: '', installDate: '' },
-          gutters: { type: '', material: '' },
-          siding: { material: '' },
-        },
+        smartHome: (() => {
+          const devices = supaData.smartHome || [];
+          const find = (...keywords) => devices.find(d =>
+            keywords.some(k => (d.type || '').toLowerCase().includes(k) || (d.name || '').toLowerCase().includes(k))
+          );
+          const wifi = find('wifi', 'network');
+          const lock = find('lock', 'door');
+          const security = find('security', 'alarm');
+          const garage = find('garage');
+          return {
+            wifi: { networkName: wifi?.data?.network_name || wifi?.name || '', password: wifi?.data?.password || '' },
+            doorLocks: lock ? [{ brand: lock.data?.brand || '', code: lock.data?.code || '', location: lock.data?.location || '' }] : [],
+            security: { provider: security?.data?.brand || '', panelLocation: security?.data?.location || '' },
+            garage: { brand: garage?.data?.brand || '', code: garage?.data?.code || '' },
+          };
+        })(),
+        emergency: (() => {
+          const info = supaData.emergencyInfo || [];
+          const find = (key) => info.find(i => (i.type || '').toLowerCase().includes(key) || (i.name || '').toLowerCase().includes(key)) || {};
+          return {
+            waterShutoff: { location: find('water').location || '', instructions: find('water').instructions || '' },
+            gasShutoff: { location: find('gas').location || '', instructions: find('gas').instructions || '' },
+            electricalPanel: { location: find('electric').location || '', instructions: find('electric').instructions || '' },
+            contacts: supaData.contacts || [],
+          };
+        })(),
+        exterior: (() => {
+          const items = supaData.exterior || [];
+          const find = (key) => items.find(i => (i.type || '').toLowerCase().includes(key) || (i.name || '').toLowerCase().includes(key)) || {};
+          const roof = find('roof');
+          const gutters = find('gutter');
+          const siding = find('siding');
+          return {
+            roof: { type: roof.type || '', material: roof.material || '', installDate: roof.install_date || '' },
+            gutters: { type: gutters.type || '', material: gutters.material || '' },
+            siding: { material: siding.material || '' },
+          };
+        })(),
         paint: (supaData.paintRecords || []).map(p => ({
           id: p.id, room: p.room_name, colorName: p.color_name, colorCode: p.color_hex,
           brand: p.brand, finish: p.finish,

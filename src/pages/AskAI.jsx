@@ -269,9 +269,12 @@ export default function AskAI() {
 
       const humanize = (raw) => {
         const m = raw?.message || String(raw || '');
-        if (/Function not found|does not exist|404/i.test(m)) return "I'm not deployed yet. Ask the admin to run the chat-with-homer edge function deploy.";
-        if (/ANTHROPIC_API_KEY/i.test(m)) return "My AI brain isn't configured. The admin needs to set ANTHROPIC_API_KEY in Supabase.";
-        if (/AI service error/i.test(m)) return 'The AI service is temporarily unavailable. Try again in a moment.';
+        if (/Failed to send a request to the Edge Function|Function not found|does not exist|404|FunctionsFetchError/i.test(m)) {
+          return "Homer's AI brain isn't deployed yet. The chat-with-homer edge function needs to be pushed to Supabase. (Merge this branch to main — the GitHub Action will auto-deploy.)";
+        }
+        if (/ANTHROPIC_API_KEY|API key/i.test(m)) return "Homer's AI brain isn't configured. Add ANTHROPIC_API_KEY in Supabase project secrets.";
+        if (/AI service error|500/i.test(m)) return 'The AI service is temporarily unavailable. Try again in a moment.';
+        if (/network|fetch failed|NetworkError/i.test(m)) return 'Network issue — check your connection and try again.';
         return m || 'Something went wrong. Please try again.';
       };
       if (fnError) throw new Error(humanize(fnError));
