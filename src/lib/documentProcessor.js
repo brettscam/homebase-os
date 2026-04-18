@@ -1,4 +1,16 @@
 import { supabase } from './supabase';
+import {
+  updateProperty, upsertRoom, upsertAppliance, upsertSystem, upsertExterior,
+  getRooms, getAppliances, getSystems,
+} from './supabaseDataStore';
+
+// Map our extracted system keys to db system types
+const SYSTEM_TYPE_MAP = {
+  hvac: 'hvac',
+  waterHeater: 'water_heater',
+  electrical: 'electrical',
+  plumbing: 'plumbing',
+};
 
 // ─── File Reading Helpers ──────────────────────────────────────────────
 
@@ -247,4 +259,132 @@ export function mergeExtractedData(existing, extracted) {
   merged._sources.documents = [...new Set([...(merged._sources.documents || []), ...docFields])];
 
   return merged;
+}
+
+// ─── Apply Extracted Data Directly to Supabase ─────────────────────────
+// Used post-onboarding (AddInfoModal) — writes extracted data straight to the DB.
+// Returns a summary of what was written.
+
+export async function applyExtractedToSupabase(propertyId, extracted) {
+  if (!propertyId) throw new Error('propertyId is required');
+
+  const summary = {
+    propertyFields: [],
+    roomsAdded: 0,
+    appliancesAdded: 0,
+    systemsUpdated: [],
+    exteriorUpdated: [],
+  };
+
+  // 1. Update property fields (only fill empty ones)
+  if (extracted.property) {
+    const { data: currentProp } = await supabase
+      .from('properties').select('*').eq('id', propertyId).single();
+
+    const fieldMap = {
+      yearBuilt: 'year_built', sqft: 'sqft', lotSize: 'lot_size',
+      stories: 'stories', bedrooms: 'bedrooms', bathrooms: 'bathrooms',
+      address: 'address', city: 'city', state: 'state', zip: 'zip',
+    };
+    const updates = {};
+    for (const [camel, snake] of Object.entries(fieldMap)) {
+      const v = extracted.property[camel];
+      if (v && !currentProp?.[snake]) {
+        updates[snake] = String(v);
+        summary.propertyFields.push(snake);
+      }
+    }
+    if (Object.keys(updates).length > 0) {
+      await updateProperty(propertyId, updates);
+    }
+  }
+
+  // 2. Add rooms (skip duplicates by name)
+  if (extracted.rooms?.length) {
+    const existingRooms = await getRooms(propertyId);
+    const existingNames = new Set(existingRooms.map(r => r.name?.toLowerCase()));
+    for (const room of extracted.rooms) {
+      if (!room.name || existingNames.has(room.name.toLowerCase())) continue;
+      await upsertRoom({
+        property_id: propertyId,
+        name: room.name,
+        type: room.type || '',
+        floor: room.floor || '',
+        sqft: room.sqft || '',
+        dimensions: room.dimensions || '',
+        notes: '',
+      });
+      summary.roomsAdded += 1;
+    }
+  }
+
+  // 3. Add appliances (skip duplicates by name+brand)
+  if (extracted.appliances?.length) {
+    const existingApps = await getAppliances(propertyId);
+    const existingKeys = new Set(
+      existingApps.map(a => `${a.name?.toLowerCase()}::${a.brand?.toLowerCase() || ''}`)
+    );
+    for (const app of extracted.appliances) {
+      if (!app.name && !app.type) continue;
+      const key = `${(app.name || app.type).toLowerCase()}::${(app.brand || '').toLowerCase()}`;
+      if (existingKeys.has(key)) continue;
+      await upsertAppliance({
+        property_id: propertyId,
+        name: app.name || app.type,
+        type: app.type || '',
+        brand: app.brand || '',
+        model: app.model || '',
+        install_date: app.installDate || '',
+      });
+      summary.appliancesAdded += 1;
+    }
+  }
+
+  // 4. Systems (merge into existing jsonb)
+  if (extracted.systems) {
+    const existingSystems = await getSystems(propertyId);
+    for (const [sysKey, sysData] of Object.entries(extracted.systems)) {
+      if (!sysData || typeof sysData !== 'object') continue;
+      const hasData = Object.values(sysData).some(v => v && String(v).trim());
+      if (!hasData) continue;
+      const dbType = SYSTEM_TYPE_MAP[sysKey] || sysKey;
+      const existing = existingSystems.find(s => s.type === dbType);
+      const mergedData = { ...(existing?.data || {}) };
+      for (const [k, v] of Object.entries(sysData)) {
+        if (v && !mergedData[k]) mergedData[k] = String(v);
+      }
+      await upsertSystem({
+        ...(existing ? { id: existing.id } : {}),
+        property_id: propertyId,
+        type: dbType,
+        data: mergedData,
+      });
+      summary.systemsUpdated.push(dbType);
+    }
+  }
+
+  // 5. Exterior (merge into existing jsonb)
+  if (extracted.exterior) {
+    const { data: existingExt } = await supabase
+      .from('exterior').select('*').eq('property_id', propertyId);
+    for (const [extKey, extData] of Object.entries(extracted.exterior)) {
+      if (!extData || typeof extData !== 'object') continue;
+      const hasData = Object.values(extData).some(v => v && String(v).trim());
+      if (!hasData) continue;
+      const existing = (existingExt || []).find(e => e.type === extKey);
+      const mergedData = { ...(existing?.data || {}) };
+      for (const [k, v] of Object.entries(extData)) {
+        if (v && !mergedData[k]) mergedData[k] = String(v);
+      }
+      await upsertExterior({
+        ...(existing ? { id: existing.id } : {}),
+        property_id: propertyId,
+        type: extKey,
+        data: mergedData,
+      });
+      summary.exteriorUpdated.push(extKey);
+    }
+  }
+
+  return summary;
 }

@@ -465,12 +465,25 @@ export async function getChatConversations(userId) {
 }
 
 export async function upsertChatConversation(convo) {
+  // If an id is provided, update the existing row (partial update safe).
+  // Otherwise insert a new row (requires user_id NOT NULL).
+  if (convo.id) {
+    const { id, ...updates } = convo;
+    const { data, error } = await supabase
+      .from('chat_conversations')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
   const { data, error } = await supabase
     .from('chat_conversations')
-    .upsert(convo, { onConflict: 'id' })
+    .insert(convo)
     .select()
     .single();
-
   if (error) throw error;
   return data;
 }
